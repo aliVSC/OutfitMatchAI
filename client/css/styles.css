@@ -1,0 +1,229 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f6f7fb;
+  color: #111;
+}
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+h1 { margin: 0 0 6px 0; }
+.subtitle { margin: 0 0 16px 0; color: #444; }
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 18px;
+  margin: 14px 0;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+label { display: block; font-weight: 600; margin-bottom: 6px; }
+input, select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  outline: none;
+}
+input:focus, select:focus { border-color: #999; }
+
+.row { display: flex; gap: 10px; margin-top: 12px; }
+
+button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+.primary { background: #111; color: white; }
+.secondary { background: #e8e8ee; color: #111; }
+
+.hint { color: #555; margin-top: 10px; font-size: 14px; }
+
+.camera {
+  display: grid;
+  gap: 10px;
+}
+video {
+  width: 100%;
+  border-radius: 12px;
+  background: #000;
+}
+.preview {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+}
+
+.bodytype-img {
+  width: 260px;
+  max-width: 100%;
+  display: block;
+  margin: 14px auto;
+}
+
+.hidden { display: none; }
+
+.msg {
+  margin-top: 10px;
+  color: #b00020;
+  font-weight: 700;
+}
+.msg.ok { color: #0b7a1c; }
+
+@media (max-width: 700px) {
+  .grid { grid-template-columns: 1fr; }
+  .row { flex-direction: column; }
+}
+
+.catalog {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.product {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.product img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  background: #eee;
+}
+
+.product .pbody { padding: 12px; }
+.product h3 { margin: 0 0 6px 0; font-size: 16px; }
+.product .meta { color: #444; font-size: 13px; margin-bottom: 10px; }
+.product .price { font-weight: 800; margin-bottom: 10px; }
+
+@media (max-width: 900px) {
+  .catalog { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .catalog { grid-template-columns: 1fr; }
+}
+
+.catalog{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.cardProduct{
+  background:white;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+
+.cardProduct img{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  border-radius:12px;
+  border:1px solid #eee;
+}
+
+.cardProduct h3{
+  margin:10px 0 6px 0;
+  font-size:16px;
+}
+
+.price{
+  font-weight:800;
+  margin:0 0 10px 0;
+}
+
+@media (max-width: 900px){
+  .catalog{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px){
+  .catalog{ grid-template-columns: 1fr; }
+}
+
+/* === TONOS DE PIEL === */
+.tone-group {
+  margin-top: 10px;
+}
+
+.tones {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.tone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7f7f7;
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all .2s ease;
+}
+
+.tone:hover {
+  background: #efefef;
+}
+
+.tone input {
+  display: none;
+}
+
+.tone .swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+}
+
+.tone span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tone input:checked + .swatch {
+  outline: 3px solid #000;
+}
+
+.palette{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.colorBox{
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  border:1px solid #ddd;
+}
+.grid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 700px){
+  .grid2{ grid-template-columns: 1fr; }
+}
