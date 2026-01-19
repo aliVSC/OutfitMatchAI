@@ -5,7 +5,7 @@ let photoBase64 = null;
 
 const el = (id) => document.getElementById(id);
 
-function setMsg(text, ok=false) {
+function setMsg(text, ok = false) {
   const m = el("msg");
   m.textContent = text;
   m.className = ok ? "msg ok" : "msg";
@@ -51,17 +51,18 @@ function takePhoto() {
 function validateForm() {
   const nombres = el("nombres").value.trim();
   const apellidos = el("apellidos").value.trim();
+  const rangoEdad = el("rangoEdad").value;
 
   const hombros = Number(el("hombros").value);
   const pecho = Number(el("pecho").value);
   const cintura = Number(el("cintura").value);
   const cadera = Number(el("cadera").value);
 
-  const tonoPiel = getTonoPiel(); // ✅ CAMBIO
+  const tonoPiel = getTonoPiel();
   const ocasion = el("ocasion").value;
-  const estiloPreferido = el("estiloPreferido").value;
 
   if (!nombres || !apellidos) return "Completa nombres y apellidos.";
+  if (!rangoEdad) return "Selecciona tu rango de edad.";
   if (!hombros || !pecho || !cintura || !cadera) return "Completa todas las medidas obligatorias.";
   if (!tonoPiel) return "Selecciona tono de piel.";
   if (!ocasion) return "Selecciona para qué necesitas la ropa (ocasión).";
@@ -77,6 +78,7 @@ async function createCliente() {
     body: JSON.stringify({
       nombres: el("nombres").value.trim(),
       apellidos: el("apellidos").value.trim(),
+      rangoEdad: el("rangoEdad").value,
       email: el("email").value.trim() || null,
       telefono: el("telefono").value.trim() || null
     })
@@ -95,9 +97,8 @@ async function sendWizard(clienteId) {
     pechoCm: Number(el("pecho").value),
     cinturaCm: Number(el("cintura").value),
     caderaCm: Number(el("cadera").value),
-    tonoPiel: getTonoPiel(), // ✅ CAMBIO
+    tonoPiel: getTonoPiel(),
     ocasion: el("ocasion").value,
-    estiloPreferido: el("estiloPreferido").value || null,
     fotoBase64: photoBase64
   };
 
@@ -130,7 +131,8 @@ async function finish() {
     localStorage.setItem("tipoCuerpoNombre", result.tipoCuerpoNombre || result.tipoCuerpo);
     localStorage.setItem("tipoCuerpoImagenUrl", result.tipoCuerpoImagenUrl || "");
     localStorage.setItem("ocasion", el("ocasion").value);
-    localStorage.setItem("tonoPiel", getTonoPiel()); // ✅ opcional pero útil
+    localStorage.setItem("tonoPiel", getTonoPiel());
+    localStorage.setItem("rangoEdad", el("rangoEdad").value);
 
     window.location.href = "result.html";
   } catch (e) {

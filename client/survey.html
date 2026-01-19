@@ -1,133 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OutfitMatch - Encuesta</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div class="container">
-    <h1>OutfitMatch</h1>
-    <p class="subtitle">Completa tus datos, toma una foto y te diremos tu tipo de cuerpo.</p>
-
-    <div class="card">
-      <h2>1) Datos personales</h2>
-
-      <div class="grid">
-        <div>
-          <label>Nombres</label>
-          <input id="nombres" placeholder="Ej: Alison" />
-        </div>
-        <div>
-          <label>Apellidos</label>
-          <input id="apellidos" placeholder="Ej: Alanuca" />
-        </div>
-        <div>
-          <label>Email (opcional)</label>
-          <input id="email" placeholder="correo@ejemplo.com" />
-        </div>
-        <div>
-          <label>Teléfono (opcional)</label>
-          <input id="telefono" placeholder="099..." />
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>2) Medidas (en cm)</h2>
-
-      <div class="grid">
-        <div>
-          <label>Estatura (opcional)</label>
-          <input id="estatura" type="number" placeholder="160" />
-        </div>
-        <div>
-          <label>Hombros</label>
-          <input id="hombros" type="number" placeholder="40" />
-        </div>
-        <div>
-          <label>Pecho</label>
-          <input id="pecho" type="number" placeholder="90" />
-        </div>
-        <div>
-          <label>Cintura</label>
-          <input id="cintura" type="number" placeholder="70" />
-        </div>
-        <div>
-          <label>Cadera</label>
-          <input id="cadera" type="number" placeholder="95" />
-        </div>
-      </div>
-
-      <p class="hint">
-        Tip rápido: usa una cinta métrica. Hombros = ancho de hombro a hombro. Pecho = contorno.
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OutfitMatch - Encuesta</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>OutfitMatch</h1>
+      <p class="subtitle">
+        Completa tus datos, toma una foto y te diremos tu tipo de cuerpo.
       </p>
-    </div>
 
-    <div class="card">
-      <h2>3) Preferencias</h2>
+      <div class="card">
+        <h2>1) Datos personales</h2>
 
-      <div class="grid">
+        <div class="grid">
           <div>
-          <label>Tono de piel</label>
-          <select id="tonoPiel">
-            <option value="">Selecciona</option>
-            <option value="claro">claro</option>
-            <option value="medio">medio</option>
-            <option value="oscuro">oscuro</option>
-          </select>
+            <label>Nombres</label>
+            <input id="nombres" placeholder="Ej: Alison" />
+          </div>
+          <div>
+            <label>Apellidos</label>
+            <input id="apellidos" placeholder="Ej: Alanuca" />
+          </div>
+          <div>
+            <label>Email (opcional)</label>
+            <input id="email" placeholder="correo@ejemplo.com" />
+          </div>
+          <div>
+            <label>Teléfono (opcional)</label>
+            <input id="telefono" placeholder="099..." />
+          </div>
+          <div>
+            <label>Rango de edad</label>
+            <select id="rangoEdad">
+              <option value="">Selecciona</option>
+              <option value="15-20">15-20</option>
+              <option value="21-30">21-30</option>
+              <option value="31-40">31-40</option>
+              <option value="40+">40+</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2) Medidas (en cm)</h2>
+
+        <div class="grid">
+          <div>
+            <label>Estatura (opcional)</label>
+            <input id="estatura" type="number" placeholder="160" />
+          </div>
+          <div>
+            <label>Hombros</label>
+            <input id="hombros" type="number" placeholder="40" />
+          </div>
+          <div>
+            <label>Pecho</label>
+            <input id="pecho" type="number" placeholder="90" />
+          </div>
+          <div>
+            <label>Cintura</label>
+            <input id="cintura" type="number" placeholder="70" />
+          </div>
+          <div>
+            <label>Cadera</label>
+            <input id="cadera" type="number" placeholder="95" />
+          </div>
         </div>
 
-        <div>
-          <label>¿Para qué necesitas la ropa?</label>
-          <select id="ocasion">
-            <option value="">Selecciona</option>
-            <option value="casual">casual</option>
-            <option value="oficina">oficina</option>
-            <option value="cita">cita</option>
-            <option value="fiesta">fiesta</option>
-            <option value="formal">formal</option>
-          </select>
+        <p class="hint">Tip rápido: usa una cinta métrica.</p>
+      </div>
+
+      <div class="card">
+        <h2>3) Preferencias</h2>
+
+        <div class="grid">
+          <div class="tone-group">
+            <label>Tono de piel</label>
+
+            <div class="tones">
+              <label class="tone">
+                <input type="radio" name="tonoPiel" value="claro" />
+                <span class="swatch" style="background: #f6d6c9"></span>
+                <span>Clara</span>
+              </label>
+
+              <label class="tone">
+                <input type="radio" name="tonoPiel" value="medio_claro" />
+                <span class="swatch" style="background: #e0ac69"></span>
+                <span>Media</span>
+              </label>
+
+              <label class="tone">
+                <input type="radio" name="tonoPiel" value="medio_oscuro" />
+                <span class="swatch" style="background: #c68642"></span>
+                <span>Morena</span>
+              </label>
+
+              <label class="tone">
+                <input type="radio" name="tonoPiel" value="oscuro" />
+                <span class="swatch" style="background: #8d5524"></span>
+                <span>Oscura</span>
+              </label>
+            </div>
+
+            <small class="hint"
+              >Elige el tono que más se parezca a tu piel (solo referencia
+              visual).</small
+            >
+          </div>
+
+          <div>
+            <label>¿Para qué necesitas la ropa?</label>
+            <select id="ocasion">
+              <option value="">Selecciona</option>
+              <option value="casual">casual</option>
+              <option value="oficina">oficina</option>
+              <option value="cita">cita</option>
+              <option value="fiesta">fiesta</option>
+              <option value="formal">formal</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>4) Foto (cámara)</h2>
+
+        <div class="camera">
+          <video id="video" autoplay playsinline></video>
+          <canvas id="canvas" class="hidden"></canvas>
+          <img id="preview" class="preview hidden" alt="Foto tomada" />
         </div>
 
-        <div>
-          <label>Estilo preferido</label>
-          <select id="estiloPreferido">
-            <option value="">Selecciona</option>
-            <option value="minimalista">minimalista</option>
-            <option value="urbano">urbano</option>
-            <option value="elegante">elegante</option>
-            <option value="sport">sport</option>
-          </select>
+        <div class="row">
+          <button id="btnCamera">Encender cámara</button>
+          <button id="btnPhoto" class="secondary">Tomar foto</button>
         </div>
+
+        <p class="hint">
+          Asegúrate de estar de frente, buena luz y cuerpo completo si puedes.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>5) Finalizar</h2>
+        <button id="btnSend" class="primary">Ver mi resultado</button>
+        <p id="msg" class="msg"></p>
       </div>
     </div>
 
-    <div class="card">
-      <h2>4) Foto (cámara)</h2>
-
-      <div class="camera">
-        <video id="video" autoplay playsinline></video>
-        <canvas id="canvas" class="hidden"></canvas>
-        <img id="preview" class="preview hidden" alt="Foto tomada" />
-      </div>
-
-      <div class="row">
-        <button id="btnCamera">Encender cámara</button>
-        <button id="btnPhoto" class="secondary">Tomar foto</button>
-      </div>
-
-      <p class="hint">Asegúrate de estar de frente, buena luz y cuerpo completo si puedes.</p>
-    </div>
-
-    <div class="card">
-      <h2>5) Finalizar</h2>
-      <button id="btnSend" class="primary">Ver mi resultado</button>
-      <p id="msg" class="msg"></p>
-    </div>
-  </div>
-
-  <script src="js/survey.js"></script>
-</body>
+    <script src="js/survey.js"></script>
+  </body>
 </html>

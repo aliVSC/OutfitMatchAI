@@ -159,53 +159,56 @@ video {
   .catalog{ grid-template-columns: 1fr; }
 }
 
-/* === TONOS DE PIEL === */
-.tone-group {
-  margin-top: 10px;
-}
+/* === TONOS DE PIEL (RADIO CON COLOR) === */
+.tone-group { margin-top: 10px; }
 
-.tones {
-  display: grid;
+.tones{
+  display:grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
-.tone {
-  display: flex;
-  align-items: center;
+.tone{
+  display:flex;
+  align-items:center;
   gap: 10px;
-  background: #f7f7f7;
+  background:#f7f7f7;
   border-radius: 12px;
-  padding: 10px;
-  cursor: pointer;
+  padding: 10px 12px;
+  cursor:pointer;
   border: 2px solid transparent;
-  transition: all .2s ease;
+  transition: all .15s ease;
+  user-select:none;
 }
 
-.tone:hover {
-  background: #efefef;
+.tone:hover{ background:#efefef; }
+
+.tone input{ display:none; }
+
+.swatch{
+  width: 36px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #cfcfcf;
 }
 
-.tone input {
-  display: none;
-}
-
-.tone .swatch {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid #ccc;
-}
-
-.tone span {
+.tone span:last-child{
+  font-weight: 700;
   font-size: 14px;
-  font-weight: 600;
 }
 
-.tone input:checked + .swatch {
-  outline: 3px solid #000;
+.tone input:checked + .swatch{
+  outline: 3px solid #111;
 }
+
+.hint{
+  display:block;
+  margin-top: 8px;
+  color:#666;
+  font-size: 12px;
+}
+
 
 .palette{
   display:flex;

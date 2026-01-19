@@ -13,13 +13,13 @@ else img.style.display = "none";
 document.getElementById("goCatalog").onclick = () => window.location.href = "catalog.html";
 document.getElementById("goSurvey").onclick = () => window.location.href = "survey.html";
 
-function setMsg(t, ok=false){
+function setMsg(t, ok = false) {
   const m = document.getElementById("msg");
   m.textContent = t;
   m.className = ok ? "msg ok" : "msg";
 }
 
-function fillList(id, items){
+function fillList(id, items) {
   const ul = document.getElementById(id);
   ul.innerHTML = "";
   (items || []).forEach(x => {
@@ -29,7 +29,18 @@ function fillList(id, items){
   });
 }
 
-async function loadRecs(){
+function renderPalette(colors) {
+  const paleta = document.getElementById("paleta");
+  paleta.innerHTML = "";
+  (colors || []).forEach(c => {
+    const box = document.createElement("div");
+    box.className = "colorBox";
+    box.style.background = c;
+    paleta.appendChild(box);
+  });
+}
+
+async function loadRecs() {
   if (!clienteId) {
     setMsg("No hay clienteId. Vuelve a la encuesta.");
     return;
@@ -37,7 +48,8 @@ async function loadRecs(){
 
   setMsg("Cargando recomendaciones...", true);
 
-  const r = await fetch(`${API}/api/recomendaciones?clienteId=${clienteId}`);
+  // ✅ este ES tu endpoint real porque tu recomendaciones.js usa router.get("/:clienteId")
+  const r = await fetch(`${API}/api/recomendaciones/${clienteId}`);
   const data = await r.json();
 
   if (!r.ok) {
@@ -45,36 +57,31 @@ async function loadRecs(){
     return;
   }
 
-  // objetivo del cuerpo
+  // ===== OBJETIVO =====
   document.getElementById("objetivo").textContent = data.cuerpo?.objetivo || "";
 
-  // paleta
-  const paleta = document.getElementById("paleta");
-  paleta.innerHTML = "";
+  // ===== PALETA =====
+  const paletaTexto = document.getElementById("paletaTexto");
+  const contraste = document.getElementById("contraste");
 
   if (data.paleta?.colores?.length) {
-    data.paleta.colores.forEach(c => {
-      const box = document.createElement("div");
-      box.className = "colorBox";
-      box.style.background = c;
-      paleta.appendChild(box);
-    });
-    document.getElementById("paletaTexto").textContent = data.paleta.texto || "";
+    renderPalette(data.paleta.colores);
+    paletaTexto.textContent = data.paleta.texto || "Paleta recomendada según tu tono de piel.";
   } else {
-    document.getElementById("paletaTexto").textContent = "No se detectó tono de piel. Vuelve a completar la encuesta.";
+    renderPalette([]);
+    paletaTexto.textContent = "No se detectó tono de piel. Vuelve a completar la encuesta.";
   }
 
-  document.getElementById("contraste").textContent =
-    `Contraste sugerido: ${data.contrasteSugerido || "medio"}.`;
+  contraste.textContent = `Contraste sugerido: ${data.contrasteSugerido || "medio"}.`;
 
-  // listas cuerpo
+  // ===== LISTAS CUERPO =====
   fillList("siList", data.cuerpo?.si || []);
   fillList("noList", data.cuerpo?.no || []);
 
-  // tips ocasión
+  // ===== TIPS OCASION =====
   fillList("ocasionTips", data.tipsOcasion || []);
 
   setMsg("Listo ✅", true);
 }
 
-loadRecs().catch(e => setMsg("Error: " + e.message));
+loadRecs().catch(e => setMsg("Error: " + (e.message || e)));
