@@ -1,166 +1,106 @@
 const router = require("express").Router();
 const { getPool, sql } = require("../db");
 
-// Reglas simples de paletas por tono de piel
-const PALETAS = {
-  claro: {
-    nombre: "Claro",
-    colores: ["#2E5AAC", "#7A2E7A", "#2E7A5E", "#C04A4A", "#2B2B2B", "#FFFFFF"],
-    texto: "Te favorecen tonos fríos y contrastes suaves. Evita colores muy amarillos apagados."
-  },
-  medio_claro: {
-    nombre: "Medio claro",
-    colores: ["#E67E22", "#1F618D", "#117A65", "#B03A2E", "#6C3483", "#F4F1DE"],
-    texto: "Te favorecen tonos cálidos moderados y colores vivos sin exagerar. Prueba terracota, verde, azul."
-  },
-  medio_oscuro: {
-    nombre: "Medio oscuro",
-    colores: ["#D35400", "#196F3D", "#1A5276", "#922B21", "#7D3C98", "#FDEBD0"],
-    texto: "Te favorecen tonos cálidos profundos y colores intensos. Prueba mostaza, esmeralda, vino."
-  },
-  oscuro: {
-    nombre: "Oscuro",
-    colores: ["#F4D03F", "#E74C3C", "#5DADE2", "#58D68D", "#AF7AC5", "#FFFFFF"],
-    texto: "Te favorecen colores brillantes y contrastes altos. Prueba amarillo, blanco, rojo, turquesa."
-  }
-};
-
-// Reglas por tipo de cuerpo
-const CUERPO = {
-  pera: {
-    si: [
-      "Blusas con hombros estructurados o mangas con volumen",
-      "Chaquetas/blazers cortos a la cintura",
-      "Pantalones rectos o bootcut",
-      "Faldas en A"
-    ],
-    no: [
-      "Pantalones súper ajustados en cadera si no quieres resaltarla",
-      "Volantes o bolsillos grandes en cadera"
-    ],
-    objetivo: "Equilibrar la parte superior con la cadera."
-  },
-  manzana: {
-    si: [
-      "Escote en V",
-      "Vestidos imperio o corte bajo el busto",
-      "Chaquetas abiertas (línea vertical)",
-      "Pantalones rectos/tiro medio"
-    ],
-    no: [
-      "Prendas muy apretadas en cintura",
-      "Cinturones muy marcados al centro"
-    ],
-    objetivo: "Crear línea vertical y definir sin apretar la zona media."
-  },
-  reloj_arena: {
-    si: [
-      "Cintura marcada (cinturón fino o corte entallado)",
-      "Vestidos ajustados moderados",
-      "Pantalón tiro alto",
-      "Blusas entalladas"
-    ],
-    no: [
-      "Ropa muy oversize sin forma",
-      "Capas muy gruesas que oculten la cintura"
-    ],
-    objetivo: "Resaltar proporción natural y cintura."
-  },
-  rectangulo: {
-    si: [
-      "Capas (blazer + top) para volumen",
-      "Faldas con vuelo o plisadas",
-      "Pantalón tiro alto + cinturón",
-      "Blusas con textura/volumen"
-    ],
-    no: [
-      "Looks totalmente rectos sin cortes",
-      "Prendas sin estructura"
-    ],
-    objetivo: "Crear curvas y definición visual."
-  },
-  triangulo_invertido: {
-    si: [
-      "Pantalones con volumen (wide leg, palazzo)",
-      "Faldas en A",
-      "Cuellos simples (evitar hombreras)",
-      "Colores oscuros arriba + claros abajo"
-    ],
-    no: [
-      "Hombreras fuertes",
-      "Cuellos muy cargados arriba"
-    ],
-    objetivo: "Equilibrar hombros con cadera."
-  }
-};
-
-// Reglas por ocasión (extra)
-const OCASION = {
-  oficina: [
-    "Colores neutros + 1 color protagonista",
-    "Blazer, pantalón recto, blusa simple",
-    "Zapatos limpios, accesorios discretos"
-  ],
-  cita: [
-    "Un punto focal: labios, collar o prenda protagonista",
-    "Colores que iluminen (según paleta)",
-    "Prenda que te haga sentir cómoda y segura"
-  ],
-  casual: [
-    "Básicos: jeans recto + camiseta + chaqueta",
-    "Capas ligeras y zapatillas limpias",
-    "Colores neutros + toques"
-  ],
-  fiesta: [
-    "Brillos controlados o telas satinadas",
-    "Accesorios más protagonistas",
-    "Un solo elemento fuerte para no sobrecargar"
-  ],
-  formal: [
-    "Monocromático o tonos oscuros elegantes",
-    "Cortes limpios, telas estructuradas",
-    "Accesorios minimalistas"
-  ]
-};
-
-router.get("/", async (req, res) => {
+router.get("/:clienteId", async (req, res) => {
   try {
-    const clienteId = Number(req.query.clienteId);
-    if (!clienteId) return res.status(400).json({ error: "clienteId es obligatorio" });
+    const clienteId = Number(req.params.clienteId);
+    if (!clienteId) return res.status(400).json({ error: "clienteId inválido" });
 
     const pool = await getPool();
 
-    const p = await pool.request()
+    const r = await pool.request()
       .input("ClienteId", sql.Int, clienteId)
-      .query(`SELECT TOP 1 TipoCuerpo, TonoPiel, Ocasion, EstiloPreferido FROM PerfilCliente WHERE ClienteId=@ClienteId`);
+      .query(`
+        SELECT TOP 1 TonoPiel, Ocasion, TipoCuerpo
+        FROM PerfilCliente
+        WHERE ClienteId=@ClienteId
+      `);
 
-    if (!p.recordset.length) return res.status(404).json({ error: "No hay perfil. Haz la encuesta." });
+    if (!r.recordset.length) {
+      return res.status(404).json({ error: "Perfil no encontrado. Completa la encuesta primero." });
+    }
 
-    const perfil = p.recordset[0];
-    const tipo = (perfil.TipoCuerpo || "").toLowerCase().trim();
-    const tono = (perfil.TonoPiel || "").toLowerCase().trim();
-    const ocasion = (perfil.Ocasion || "").toLowerCase().trim();
+    const { TonoPiel, Ocasion, TipoCuerpo } = r.recordset[0];
 
-    const paleta = PALETAS[tono] || null;
-    const cuerpo = CUERPO[tipo] || null;
-    const tipsOcasion = OCASION[ocasion] || [];
-
-    // Tip extra: contraste sugerido (simple)
-    const contraste = (tono === "oscuro") ? "alto" : (tono === "claro" ? "medio" : "medio-alto");
-
-    res.json({
-      perfil: {
-        tipoCuerpo: tipo,
-        tonoPiel: tono,
-        ocasion,
-        estiloPreferido: perfil.EstiloPreferido || null
+    // ===== PALETA por tono =====
+    const paletas = {
+      claro: {
+        texto: "Te favorecen tonos suaves y luminosos: marfil, beige claro, rosados suaves, celestes.",
+        colores: ["#F6D6C9", "#F2E2D8", "#EFB7A5", "#C9D6F6"]
       },
+      medio_claro: {
+        texto: "Te favorecen tonos cálidos medios: camel, terracota suave, verde oliva, azul petróleo.",
+        colores: ["#E0AC69", "#C68642", "#7A8F55", "#1F6F8B"]
+      },
+      medio_oscuro: {
+        texto: "Te favorecen tonos intensos: mostaza, vino, verde bosque, azul marino.",
+        colores: ["#C68642", "#7A2E2E", "#1F4D2B", "#1F2A44"]
+      },
+      oscuro: {
+        texto: "Te favorecen tonos profundos y contrastantes: blanco, dorado, esmeralda, fucsia.",
+        colores: ["#FFFFFF", "#C9A227", "#007F5F", "#C2185B"]
+      }
+    };
+
+    const paleta = paletas[TonoPiel] || { texto: "", colores: [] };
+
+    // ===== CONTRASTE sugerido (simple) =====
+    const contrasteSugerido = (TonoPiel === "claro") ? "alto"
+      : (TonoPiel === "oscuro") ? "bajo"
+      : "medio";
+
+    // ===== Recomendaciones por cuerpo =====
+    const reglas = {
+      reloj_arena: {
+        objetivo: "Marcar la cintura y mantener equilibrio entre hombros y cadera.",
+        si: ["Cinturones", "Vestidos entallados", "Escote V", "Pantalón tiro alto"],
+        no: ["Oversize sin forma", "Prendas cuadradas sin cintura"]
+      },
+      pera: {
+        objetivo: "Llevar atención a la parte superior y estilizar cadera.",
+        si: ["Blusas claras o con detalle arriba", "Blazer estructurado", "Pantalón recto/bootcut", "Escote barco o V"],
+        no: ["Bolsillos grandes en cadera", "Faldas muy ajustadas", "Detalles voluminosos abajo"]
+      },
+      manzana: {
+        objetivo: "Estilizar el centro del cuerpo y crear líneas verticales.",
+        si: ["Chaquetas abiertas", "Cortes rectos", "Escote V", "Vestidos corte A"],
+        no: ["Prendas muy ajustadas al abdomen", "Cinturones apretados en cintura"]
+      },
+      rectangulo: {
+        objetivo: "Crear curvas visuales y dar forma a la silueta.",
+        si: ["Capas (blazer + top)", "Cinturones", "Texturas", "Faldas con volumen"],
+        no: ["Looks totalmente rectos", "Prendas planas sin estructura"]
+      },
+      triangulo_invertido: {
+        objetivo: "Equilibrar hombros con volumen en la parte inferior.",
+        si: ["Pantalones amplios", "Faldas con volumen", "Colores oscuros arriba", "Detalles abajo"],
+        no: ["Hombreras", "Mangas abullonadas arriba", "Cuellos altos con mucho volumen"]
+      }
+    };
+
+    const cuerpo = reglas[TipoCuerpo] || { objetivo: "", si: [], no: [] };
+
+    // ===== Tips por ocasión =====
+    const tipsPorOcasion = {
+      casual: ["Telas cómodas y cortes relajados.", "Combina básicos con un accesorio."],
+      oficina: ["Colores neutros y cortes limpios.", "Evita transparencias y escotes profundos."],
+      cita: ["Usa un color protagonista.", "Resalta tu mejor zona (cintura u hombros)."],
+      fiesta: ["Agrega brillo o textura.", "Equilibra: si arriba es llamativo, abajo simple."],
+      formal: ["Tonos sobrios.", "Cortes minimalistas y elegantes."]
+    };
+
+    const tipsOcasion = tipsPorOcasion[Ocasion] || [];
+
+    // ✅ Respuesta EXACTA como tu result.js espera
+    res.json({
       paleta,
+      contrasteSugerido,
       cuerpo,
-      tipsOcasion,
-      contrasteSugerido: contraste
+      tipsOcasion
     });
+
   } catch (e) {
+    console.error("Error recomendaciones:", e);
     res.status(500).json({ error: "Error recomendaciones", detail: String(e.message || e) });
   }
 });

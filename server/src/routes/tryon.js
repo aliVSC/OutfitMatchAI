@@ -1,6 +1,10 @@
 const router = require("express").Router();
 const { getPool, sql } = require("../db");
+const { nanoBananaTryOn } = require("../nanoBanana");
 
+// =========================
+// GET /api/tryon/contexto
+// =========================
 router.get("/contexto", async (req, res) => {
   try {
     const clienteId = Number(req.query.clienteId);
@@ -46,12 +50,17 @@ router.get("/contexto", async (req, res) => {
   }
 });
 
+// =========================
+// POST /api/tryon/guardar
+// =========================
 router.post("/guardar", async (req, res) => {
   try {
     const { clienteId, prendaId, imagenResultadoBase64 } = req.body;
 
     if (!clienteId || !prendaId || !imagenResultadoBase64) {
-      return res.status(400).json({ error: "clienteId, prendaId e imagenResultadoBase64 son obligatorios" });
+      return res.status(400).json({
+        error: "clienteId, prendaId e imagenResultadoBase64 son obligatorios"
+      });
     }
 
     const pool = await getPool();
@@ -71,18 +80,23 @@ router.post("/guardar", async (req, res) => {
   }
 });
 
-module.exports = router;
-
-
-const { nanoBananaTryOn } = require("../nanoBanana");
-
+// =========================
+// POST /api/tryon/nano
+// Body: { clienteId, prendaId, prendaBase64 }
+// =========================
 router.post("/nano", async (req, res) => {
   try {
-    const { clienteId, prendaId } = req.body;
-    if (!clienteId || !prendaId) return res.status(400).json({ error: "clienteId y prendaId obligatorios" });
+    const { clienteId, prendaId, prendaBase64 } = req.body;
+
+    if (!clienteId || !prendaId || !prendaBase64) {
+      return res.status(400).json({
+        error: "clienteId, prendaId y prendaBase64 son obligatorios"
+      });
+    }
 
     const pool = await getPool();
 
+    // 1) Foto del cliente
     const foto = await pool.request()
       .input("ClienteId", sql.Int, clienteId)
       .query(`
@@ -92,22 +106,40 @@ router.post("/nano", async (req, res) => {
         ORDER BY Fecha DESC
       `);
 
-    if (!foto.recordset.length) return res.status(404).json({ error: "Cliente sin foto" });
+    if (!foto.recordset.length) {
+      return res.status(404).json({ error: "Cliente sin foto" });
+    }
 
-    const prenda = await pool.request()
+    const personaBase64 = foto.recordset[0].FotoBase64;
+
+    // 2) IA Nano Banana
+    const resultadoIA = await nanoBananaTryOn({
+      personaBase64,
+      prendaBase64
+    });
+
+    // 3) Guardar resultado
+    await pool.request()
+      .input("ClienteId", sql.Int, clienteId)
       .input("PrendaId", sql.Int, prendaId)
-      .query(`SELECT TOP 1 * FROM Prendas WHERE Id=@PrendaId AND Activo=1`);
+      .input("Img", sql.NVarChar(sql.MAX), resultadoIA)
+      .query(`
+        INSERT INTO TryOnResultados (ClienteId, PrendaId, ImagenResultadoBase64)
+        VALUES (@ClienteId, @PrendaId, @Img)
+      `);
 
-    if (!prenda.recordset.length) return res.status(404).json({ error: "Prenda no existe" });
-
-    // Para IA: necesitas base64 de la prenda.
-    // MVP: usaremos OverlayUrl como imagen PNG cargada desde el frontend (más fácil).
-    // En producción: guardar prenda en base64 o descargar archivo.
-    return res.status(400).json({
-      error: "Para Nano Banana falta: enviar prendaBase64 desde el frontend (te lo hago en el siguiente paso)."
+    res.json({
+      ok: true,
+      imagenResultadoBase64: resultadoIA
     });
 
   } catch (e) {
-    res.status(500).json({ error: "Error nano", detail: String(e.message || e) });
+    console.error(e);
+    res.status(500).json({
+      error: "Error en Nano Banana",
+      detail: String(e.message || e)
+    });
   }
 });
+
+module.exports = router;

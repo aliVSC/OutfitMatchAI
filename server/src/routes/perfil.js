@@ -5,7 +5,7 @@ const { calcTipoCuerpo } = require("../bodyType");
 /**
  * POST /api/perfil/wizard
  * Guarda:
- * - PerfilCliente (medidas + datos)
+ * - PerfilCliente (medidas + tono + ocasion + tipoCuerpo)
  * - ClienteFotos (foto base64)
  * Calcula tipo de cuerpo y lo guarda
  * Devuelve tipo y la imagen del tipo
@@ -21,47 +21,73 @@ router.post("/wizard", async (req, res) => {
       caderaCm,
       tonoPiel,
       ocasion,
-      estiloPreferido,
       fotoBase64
     } = req.body;
 
-    // Validaciones mínimas
-    if (!clienteId) return res.status(400).json({ error: "clienteId es obligatorio" });
-    if (!hombrosCm || !pechoCm || !cinturaCm || !caderaCm) {
-      return res.status(400).json({ error: "Faltan medidas: hombros/pecho/cintura/cadera" });
+    // ===== 0) Normalizar / convertir =====
+    const id = Number(clienteId);
+
+    const est = (estaturaCm !== undefined && estaturaCm !== null && estaturaCm !== "")
+      ? Number(estaturaCm)
+      : null;
+
+    const homb = Number(hombrosCm);
+    const pecho = Number(pechoCm);
+    const cint = Number(cinturaCm);
+    const cad = Number(caderaCm);
+
+    // ===== 1) Validaciones fuertes =====
+    if (!id) return res.status(400).json({ error: "clienteId es obligatorio" });
+
+    // si llega 0, NaN, null, "" => falla
+    if (![homb, pecho, cint, cad].every(n => Number.isFinite(n) && n > 0)) {
+      return res.status(400).json({
+        error: "Medidas inválidas. Revisa hombros/pecho/cintura/cadera (deben ser números > 0)."
+      });
     }
+
+    if (!tonoPiel) return res.status(400).json({ error: "tonoPiel es obligatorio" });
+    if (!ocasion) return res.status(400).json({ error: "ocasion es obligatorio" });
     if (!fotoBase64) return res.status(400).json({ error: "La foto (fotoBase64) es obligatoria" });
 
-    // Calcular tipo cuerpo
-    const tipo = calcTipoCuerpo({
-      hombros: Number(hombrosCm),
-      pecho: Number(pechoCm),
-      cintura: Number(cinturaCm),
-      cadera: Number(caderaCm)
-    });
+    // ===== 2) Calcular tipo cuerpo =====
+    let tipo = "rectangulo";
+    try {
+      tipo = calcTipoCuerpo({
+        hombros: homb,
+        pecho: pecho,
+        cintura: cint,
+        cadera: cad
+      });
+    } catch (errCalc) {
+      console.error("ERROR calcTipoCuerpo:", errCalc);
+      return res.status(500).json({
+        error: "Error calculando tipo de cuerpo",
+        detail: String(errCalc.message || errCalc)
+      });
+    }
 
     const pool = await getPool();
 
-    // 1) Guardar foto (1 foto por wizard; puedes cambiar luego)
+    // ===== 3) Guardar foto (histórico) =====
     await pool.request()
-      .input("ClienteId", sql.Int, clienteId)
+      .input("ClienteId", sql.Int, id)
       .input("FotoBase64", sql.NVarChar(sql.MAX), fotoBase64)
       .query(`
         INSERT INTO ClienteFotos (ClienteId, FotoBase64)
         VALUES (@ClienteId, @FotoBase64)
       `);
 
-    // 2) Insertar o actualizar PerfilCliente (ClienteId UNIQUE)
+    // ===== 4) UPSERT PerfilCliente (ClienteId UNIQUE) =====
     await pool.request()
-      .input("ClienteId", sql.Int, clienteId)
-      .input("EstaturaCm", sql.Int, estaturaCm || null)
-      .input("HombrosCm", sql.Decimal(5,2), Number(hombrosCm))
-      .input("PechoCm", sql.Decimal(5,2), Number(pechoCm))
-      .input("CinturaCm", sql.Decimal(5,2), Number(cinturaCm))
-      .input("CaderaCm", sql.Decimal(5,2), Number(caderaCm))
-      .input("TonoPiel", sql.NVarChar(30), tonoPiel || null)
-      .input("Ocasion", sql.NVarChar(40), ocasion || null)
-      .input("EstiloPreferido", sql.NVarChar(50), estiloPreferido || null)
+      .input("ClienteId", sql.Int, id)
+      .input("EstaturaCm", sql.Int, Number.isFinite(est) ? est : null)
+      .input("HombrosCm", sql.Decimal(5,2), homb)
+      .input("PechoCm", sql.Decimal(5,2), pecho)
+      .input("CinturaCm", sql.Decimal(5,2), cint)
+      .input("CaderaCm", sql.Decimal(5,2), cad)
+      .input("TonoPiel", sql.NVarChar(30), tonoPiel)
+      .input("Ocasion", sql.NVarChar(40), ocasion)
       .input("TipoCuerpo", sql.NVarChar(40), tipo)
       .query(`
         IF EXISTS (SELECT 1 FROM PerfilCliente WHERE ClienteId=@ClienteId)
@@ -74,7 +100,6 @@ router.post("/wizard", async (req, res) => {
               CaderaCm=@CaderaCm,
               TonoPiel=@TonoPiel,
               Ocasion=@Ocasion,
-              EstiloPreferido=@EstiloPreferido,
               TipoCuerpo=@TipoCuerpo,
               FechaActualizacion=SYSDATETIME()
           WHERE ClienteId=@ClienteId
@@ -82,13 +107,13 @@ router.post("/wizard", async (req, res) => {
         ELSE
         BEGIN
           INSERT INTO PerfilCliente
-          (ClienteId, EstaturaCm, HombrosCm, PechoCm, CinturaCm, CaderaCm, TonoPiel, Ocasion, EstiloPreferido, TipoCuerpo)
+          (ClienteId, EstaturaCm, HombrosCm, PechoCm, CinturaCm, CaderaCm, TonoPiel, Ocasion, TipoCuerpo)
           VALUES
-          (@ClienteId, @EstaturaCm, @HombrosCm, @PechoCm, @CinturaCm, @CaderaCm, @TonoPiel, @Ocasion, @EstiloPreferido, @TipoCuerpo)
+          (@ClienteId, @EstaturaCm, @HombrosCm, @PechoCm, @CinturaCm, @CaderaCm, @TonoPiel, @Ocasion, @TipoCuerpo)
         END
       `);
 
-    // 3) Traer imagen del tipo de cuerpo desde TiposCuerpo
+    // ===== 5) Traer imagen del tipo de cuerpo =====
     const t = await pool.request()
       .input("Codigo", sql.NVarChar(40), tipo)
       .query(`SELECT TOP 1 Codigo, Nombre, ImagenUrl FROM TiposCuerpo WHERE Codigo=@Codigo`);
@@ -101,8 +126,13 @@ router.post("/wizard", async (req, res) => {
       tipoCuerpoNombre: tipoInfo.Nombre,
       tipoCuerpoImagenUrl: tipoInfo.ImagenUrl
     });
+
   } catch (e) {
-    res.status(500).json({ error: "Error en wizard", detail: String(e.message || e) });
+    console.error("WIZARD ERROR REAL:", e);
+    res.status(500).json({
+      error: "Error en wizard",
+      detail: String(e.message || e)
+    });
   }
 });
 
@@ -113,6 +143,8 @@ router.post("/wizard", async (req, res) => {
 router.get("/:clienteId", async (req, res) => {
   try {
     const clienteId = Number(req.params.clienteId);
+    if (!clienteId) return res.status(400).json({ error: "clienteId inválido" });
+
     const pool = await getPool();
 
     const perfil = await pool.request()
@@ -141,7 +173,9 @@ router.get("/:clienteId", async (req, res) => {
       ultimaFotoBase64: foto.recordset[0]?.FotoBase64 || null,
       tipoInfo: tipoInfo.recordset[0] || null
     });
+
   } catch (e) {
+    console.error("GET PERFIL ERROR:", e);
     res.status(500).json({ error: "Error obteniendo perfil", detail: String(e.message || e) });
   }
 });

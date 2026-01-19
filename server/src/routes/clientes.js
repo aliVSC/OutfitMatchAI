@@ -3,15 +3,19 @@ const { getPool, sql } = require("../db");
 
 /**
  * POST /api/clientes
- * Crea un cliente (nombres, apellidos, email, telefono)
+ * Crea un cliente (nombres, apellidos, rangoEdad, email, telefono)
  * Devuelve: { clienteId }
  */
 router.post("/", async (req, res) => {
   try {
-    const { nombres, apellidos, email, telefono } = req.body;
+    const { nombres, apellidos, rangoEdad, email, telefono } = req.body;
 
     if (!nombres || !apellidos) {
       return res.status(400).json({ error: "Nombres y apellidos son obligatorios." });
+    }
+
+    if (!rangoEdad) {
+      return res.status(400).json({ error: "Rango de edad es obligatorio." });
     }
 
     const pool = await getPool();
@@ -19,12 +23,13 @@ router.post("/", async (req, res) => {
     const r = await pool.request()
       .input("Nombres", sql.NVarChar(80), nombres.trim())
       .input("Apellidos", sql.NVarChar(80), apellidos.trim())
+      .input("RangoEdad", sql.NVarChar(30), rangoEdad)
       .input("Email", sql.NVarChar(150), email?.trim() || null)
       .input("Telefono", sql.NVarChar(30), telefono?.trim() || null)
       .query(`
-        INSERT INTO Clientes (Nombres, Apellidos, Email, Telefono)
+        INSERT INTO Clientes (Nombres, Apellidos, RangoEdad, Email, Telefono)
         OUTPUT INSERTED.Id
-        VALUES (@Nombres, @Apellidos, @Email, @Telefono)
+        VALUES (@Nombres, @Apellidos, @RangoEdad, @Email, @Telefono)
       `);
 
     res.json({ clienteId: r.recordset[0].Id });
