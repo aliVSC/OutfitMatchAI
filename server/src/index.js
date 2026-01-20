@@ -12,6 +12,8 @@ const recomendaciones = require("./routes/recomendaciones");
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
+app.use(express.static("client"));
+
 
 app.use("/api/clientes", clientes);
 app.use("/api/perfil", perfil);

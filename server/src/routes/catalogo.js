@@ -7,8 +7,8 @@ const { getPool, sql } = require("../db");
  * - TipoCuerpo del perfil (tag tipo cuerpo)
  * - Ocasion del perfil (tag ocasion)
  *
- * Requiere que las prendas tengan tags asociados:
- *  Ej: 'pera' y 'oficina'
+ * Devuelve además:
+ * - imgFrente / imgAtras desde PrendaImagenes
  */
 router.get("/", async (req, res) => {
   try {
@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
 
     const pool = await getPool();
 
-    // 1) obtener tipo cuerpo y ocasión del cliente
+    // 1) perfil del cliente
     const perfil = await pool.request()
       .input("ClienteId", sql.Int, clienteId)
       .query(`SELECT TOP 1 TipoCuerpo, Ocasion FROM PerfilCliente WHERE ClienteId=@ClienteId`);
@@ -33,12 +33,25 @@ router.get("/", async (req, res) => {
       return res.status(400).json({ error: "Perfil incompleto: falta TipoCuerpo u Ocasion" });
     }
 
-    // 2) filtrar prendas por tags (tipoCuerpo + ocasion)
+    // 2) prendas filtradas + imágenes frente/atrás
     const prendas = await pool.request()
       .input("TipoCuerpo", sql.NVarChar(80), tipoCuerpo)
       .input("Ocasion", sql.NVarChar(80), ocasion)
       .query(`
-        SELECT DISTINCT p.*
+        SELECT DISTINCT
+          p.Id, p.Nombre, p.Categoria, p.Color, p.Precio, p.Stock, p.Activo,
+          p.OverlayUrl,
+
+          (SELECT TOP 1 Url
+           FROM PrendaImagenes
+           WHERE PrendaId = p.Id AND Tipo = 'frente' AND Activo = 1
+           ORDER BY Orden ASC) AS imgFrente,
+
+          (SELECT TOP 1 Url
+           FROM PrendaImagenes
+           WHERE PrendaId = p.Id AND Tipo = 'atras' AND Activo = 1
+           ORDER BY Orden ASC) AS imgAtras
+
         FROM Prendas p
         JOIN PrendaTags pt1 ON pt1.PrendaId = p.Id
         JOIN Tags t1 ON t1.Id = pt1.TagId AND t1.Nombre = @TipoCuerpo
@@ -48,12 +61,17 @@ router.get("/", async (req, res) => {
         ORDER BY p.Id DESC
       `);
 
-    res.json({
-      tipoCuerpo,
-      ocasion,
-      prendas: prendas.recordset
-    });
+    // Si no tiene imgAtras => "", así no rompe el frontend
+    const list = prendas.recordset.map(p => ({
+      ...p,
+      imgFrente: p.imgFrente || "",
+      imgAtras: p.imgAtras || ""
+    }));
+
+    res.json({ tipoCuerpo, ocasion, prendas: list });
+
   } catch (e) {
+    console.error("Error catálogo:", e);
     res.status(500).json({ error: "Error catálogo", detail: String(e.message || e) });
   }
 });
