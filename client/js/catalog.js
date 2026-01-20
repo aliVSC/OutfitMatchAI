@@ -6,6 +6,10 @@ function setMsg(t, ok=false) {
   el("msg").className = ok ? "msg ok" : "msg";
 }
 
+function safeStr(x) {
+  return (typeof x === "string") ? x : "";
+}
+
 async function loadCatalog() {
   const clienteId = localStorage.getItem("clienteId");
   if (!clienteId) {
@@ -29,22 +33,33 @@ async function loadCatalog() {
   const cont = el("catalog");
   cont.innerHTML = "";
 
-  if (!data.prendas.length) {
+  if (!data.prendas || !data.prendas.length) {
     setMsg("No hay prendas que coincidan con tu perfil. (Falta asignar Tags a las prendas)");
     return;
   }
 
   data.prendas.forEach(p => {
+    const imgFrente = safeStr(p.imgFrente);
+    const imgAtras  = safeStr(p.imgAtras);
+
     const div = document.createElement("div");
     div.className = "cardProduct";
 
     div.innerHTML = `
-      <img src="${p.ImagenUrl || ""}" alt="${p.Nombre}">
+      <img class="pimg" src="${imgFrente}" alt="${p.Nombre}">
       <h3>${p.Nombre}</h3>
-      <p class="price">$${Number(p.Precio).toFixed(2)}</p>
+      <p class="price">$${Number(p.Precio || 0).toFixed(2)}</p>
       <button class="primary">Probar</button>
     `;
 
+    // ✅ Hover: cambia a la imagen "atrás" si existe
+    const img = div.querySelector(".pimg");
+    if (imgAtras) {
+      img.addEventListener("mouseenter", () => { img.src = imgAtras; });
+      img.addEventListener("mouseleave", () => { img.src = imgFrente; });
+    }
+
+    // ✅ Probar
     div.querySelector("button").onclick = () => {
       localStorage.setItem("prendaId", String(p.Id));
       window.location.href = "tryon.html";
@@ -53,9 +68,9 @@ async function loadCatalog() {
     cont.appendChild(div);
   });
 
-  setMsg("Listo ✅", true);
+  setMsg("Listo", true);
 }
 
 el("btnBack").onclick = () => window.location.href = "result.html";
 
-loadCatalog().catch(e => setMsg("Error: " + e.message));
+loadCatalog().catch(e => setMsg("Error: " + (e.message || e)));
