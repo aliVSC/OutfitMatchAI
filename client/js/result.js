@@ -81,7 +81,7 @@ async function loadRecs() {
   // ===== TIPS OCASION =====
   fillList("ocasionTips", data.tipsOcasion || []);
 
-  setMsg("Listo ✅", true);
+  setMsg("", true);
 }
 
 loadRecs().catch(e => setMsg("Error: " + (e.message || e)));

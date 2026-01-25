@@ -39,38 +39,49 @@ async function loadCatalog() {
   }
 
   data.prendas.forEach(p => {
-    const imgFrente = safeStr(p.imgFrente);
+    // ✅ Preferimos las imágenes nuevas (imgFrente/imgAtras)
+    // y si no existen, usamos ImagenUrl como respaldo.
+    const imgFrente = safeStr(p.imgFrente) || safeStr(p.ImagenUrl);
     const imgAtras  = safeStr(p.imgAtras);
 
     const div = document.createElement("div");
     div.className = "cardProduct";
 
+    // Si no hay imagen, no mostramos img para evitar ícono roto
+    const imgHtml = imgFrente
+      ? `<img class="pimg" src="${imgFrente}" alt="${safeStr(p.Nombre)}">`
+      : `<div class="pimg placeholder">Sin imagen</div>`;
+
     div.innerHTML = `
-      <img class="pimg" src="${imgFrente}" alt="${p.Nombre}">
-      <h3>${p.Nombre}</h3>
+      ${imgHtml}
+      <h3>${safeStr(p.Nombre)}</h3>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)}</p>
-      <button class="primary">Probar</button>
+      <button class="primary">Generar con IA</button>
     `;
 
     // ✅ Hover: cambia a la imagen "atrás" si existe
     const img = div.querySelector(".pimg");
-    if (imgAtras) {
+    if (img && img.tagName === "IMG" && imgAtras) {
       img.addEventListener("mouseenter", () => { img.src = imgAtras; });
       img.addEventListener("mouseleave", () => { img.src = imgFrente; });
     }
 
-    // ✅ Probar
+    // ✅ Generar con IA (en vez de "Probar")
     div.querySelector("button").onclick = () => {
       localStorage.setItem("prendaId", String(p.Id));
+
+      // opcional: guardar nombre/imagen para mostrar en tryon.html sin pedir al server
+      localStorage.setItem("prendaNombre", safeStr(p.Nombre));
+      localStorage.setItem("prendaImgFrente", imgFrente || "");
+
       window.location.href = "tryon.html";
     };
 
     cont.appendChild(div);
   });
 
-  setMsg("Listo", true);
+  setMsg("", true);
 }
 
 el("btnBack").onclick = () => window.location.href = "result.html";
-
 loadCatalog().catch(e => setMsg("Error: " + (e.message || e)));
