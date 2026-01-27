@@ -17,7 +17,7 @@ async function renderAI() {
     return;
   }
 
-  setMsg("Generando con IA🤖", true);
+  setMsg("Generando con IA 🤖", true);
 
   const r = await fetch(`${API}/api/tryon/ai`, {
     method: "POST",
@@ -67,6 +67,24 @@ async function saveTryOn() {
   setMsg("Guardado ✅", true);
 }
 
+// ✅ NUEVO: salir y limpiar datos para otro usuario
+function exitForNewUser() {
+  // Limpia lo necesario para que otra persona empiece desde 0
+  localStorage.removeItem("clienteId");
+  localStorage.removeItem("prendaId");
+
+  // Si guardas otras cosas en localStorage, límpialas también:
+  localStorage.removeItem("tipoCuerpo");
+  localStorage.removeItem("ocasion");
+
+  finalBase64 = null;
+
+  // Regresa al inicio del flujo (encuesta)
+  window.location.href = "survey.html";
+}
+
 el("btnAI").onclick = () => renderAI().catch(e => setMsg("Error: " + e.message));
 el("btnSave").onclick = () => saveTryOn().catch(e => setMsg("Error: " + e.message));
 el("btnBack").onclick = () => window.location.href = "catalog.html";
+
+el("btnExit").onclick = exitForNewUser;

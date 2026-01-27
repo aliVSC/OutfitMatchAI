@@ -1,165 +1,256 @@
+/* =========================
+   THEME (Minimal + Rosa Suave)
+   ========================= */
+:root{
+  --bg: #fff5f8;            /* fondo rosado muy suave */
+  --surface: #ffffff;       /* tarjetas */
+  --text: #1a1a1a;
+  --muted: #6b6b6b;
+
+  --border: rgba(0,0,0,.08);
+  --shadow: 0 10px 30px rgba(0,0,0,.08);
+
+  --primary: #d84c86;       /* rosa principal */
+  --primary-dark: #b93a6f;
+  --primary-soft: rgba(216,76,134,.12); /* rosa suave para hovers */
+
+  --secondary: #f2e7ee;     /* gris-rosado */
+  --secondary-text: #1a1a1a;
+
+  --success: #1f8a3b;
+  --danger: #b00020;
+}
+
+/* =========================
+   BASE
+   ========================= */
 * { box-sizing: border-box; }
-body {
+
+body{
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #f6f7fb;
-  color: #111;
+  background: #ffffff
 }
-.container {
-  max-width: 900px;
+
+.container{
+  max-width: 980px;
   margin: 0 auto;
   padding: 24px;
 }
-h1 { margin: 0 0 6px 0; }
-.subtitle { margin: 0 0 16px 0; color: #444; }
 
-.card {
-  background: white;
-  border-radius: 14px;
-  padding: 18px;
-  margin: 14px 0;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+h1{
+  margin: 0 0 6px 0;
+  letter-spacing: -.3px;
 }
 
-.grid {
+.subtitle{
+  margin: 0 0 16px 0;
+  color: var(--muted);
+}
+
+.card{
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 18px;
+  margin: 14px 0;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+/* =========================
+   FORMS
+   ========================= */
+.grid{
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-label { display: block; font-weight: 600; margin-bottom: 6px; }
-input, select {
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  outline: none;
-}
-input:focus, select:focus { border-color: #999; }
-
-.row { display: flex; gap: 10px; margin-top: 12px; }
-
-button {
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
+label{
+  display: block;
   font-weight: 700;
+  margin-bottom: 6px;
 }
-.primary { background: #111; color: white; }
-.secondary { background: #e8e8ee; color: #111; }
 
-.hint { color: #555; margin-top: 10px; font-size: 14px; }
+input, select{
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  outline: none;
+  background: #fff;
+}
 
-.camera {
+input:focus, select:focus{
+  border-color: rgba(216,76,134,.45);
+  box-shadow: 0 0 0 4px rgba(216,76,134,.14);
+}
+
+/* =========================
+   BUTTONS
+   ========================= */
+.row{
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+button{
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform .05s ease, box-shadow .15s ease, background .15s ease;
+}
+
+button:active{
+  transform: translateY(1px);
+}
+
+/* Primario (rosa) */
+.primary{
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(216,76,134,.18);
+}
+.primary:hover{ background: var(--primary-dark); }
+
+/* Secundario (gris-rosado) */
+.secondary{
+  background: var(--secondary);
+  color: var(--secondary-text);
+  border-color: rgba(0,0,0,.05);
+}
+.secondary:hover{ background: #ead9e4; }
+
+/* =========================
+   MEDIA + PREVIEW
+   ========================= */
+.hint{
+  color: var(--muted);
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.camera{
   display: grid;
   gap: 10px;
 }
-video {
+
+video{
   width: 100%;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #000;
 }
-.preview {
+
+.preview{
   width: 100%;
-  border-radius: 12px;
-  border: 1px solid #ddd;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
 }
 
-.bodytype-img {
+.bodytype-img{
   width: 260px;
   max-width: 100%;
   display: block;
   margin: 14px auto;
 }
 
-.hidden { display: none; }
+.hidden{ display:none; }
 
-.msg {
+/* =========================
+   FEEDBACK
+   ========================= */
+.msg{
   margin-top: 10px;
-  color: #b00020;
-  font-weight: 700;
+  color: var(--danger);
+  font-weight: 800;
 }
-.msg.ok { color: #0b7a1c; }
+.msg.ok{ color: var(--success); }
 
-@media (max-width: 700px) {
-  .grid { grid-template-columns: 1fr; }
-  .row { flex-direction: column; }
-}
-
-.catalog {
+/* =========================
+   CATALOGO (TU CASO: cardProduct + pimg)
+   ========================= */
+.catalog{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 
-.product {
-  background: #fff;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+/* Card producto */
+.cardProduct{
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: transform .12s ease, box-shadow .18s ease;
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
-.product img {
+.cardProduct:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.10);
+}
+
+/* ✅ CONTENEDOR DE IMAGEN: evita recorte */
+.cardProduct .pimg{
   width: 100%;
-  height: 210px;
-  object-fit: cover;
-  background: #eee;
+  height: 230px;               /* un poco más alto para que se aprecie */
+  object-fit: contain;          /* ✅ muestra la prenda completa */
+  background: #fff;             /* o #f7f2f6 si quieres tono suave */
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.06);
+  padding: 8px;                 /* da “aire” para PNG/JPEG */
 }
 
-.product .pbody { padding: 12px; }
-.product h3 { margin: 0 0 6px 0; font-size: 16px; }
-.product .meta { color: #444; font-size: 13px; margin-bottom: 10px; }
-.product .price { font-weight: 800; margin-bottom: 10px; }
-
-@media (max-width: 900px) {
-  .catalog { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
-  .catalog { grid-template-columns: 1fr; }
-}
-
-.catalog{
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.cardProduct{
-  background:white;
-  border-radius:14px;
-  padding:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
-}
-
-.cardProduct img{
-  width:100%;
-  height:180px;
-  object-fit:cover;
-  border-radius:12px;
-  border:1px solid #eee;
-}
-
+/* Títulos y precio */
 .cardProduct h3{
-  margin:10px 0 6px 0;
-  font-size:16px;
+  margin: 2px 0 0 0;
+  font-size: 16px;
+  line-height: 1.2;
 }
 
 .price{
-  font-weight:800;
-  margin:0 0 10px 0;
+  font-weight: 900;
+  margin: 0;
+  color: #111;
 }
 
-@media (max-width: 900px){
-  .catalog{ grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px){
-  .catalog{ grid-template-columns: 1fr; }
+/* Botón dentro del producto */
+.cardProduct .primary{
+  width: 100%;
 }
 
-/* === TONOS DE PIEL (RADIO CON COLOR) === */
+/* =========================
+   (Opcional) soporte para .product si lo usas en otra vista
+   ========================= */
+.product{
+  background: var(--surface);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.product img{
+  width: 100%;
+  height: 230px;
+  object-fit: contain;     /* ✅ sin recorte */
+  background: #fff;
+  padding: 8px;
+}
+.product .pbody{ padding: 12px; }
+
+/* =========================
+   TONOS DE PIEL (RADIOS)
+   ========================= */
 .tone-group { margin-top: 10px; }
 
 .tones{
@@ -173,60 +264,76 @@ video {
   display:flex;
   align-items:center;
   gap: 10px;
-  background:#f7f7f7;
-  border-radius: 12px;
+  background: #fff;
+  border-radius: 14px;
   padding: 10px 12px;
   cursor:pointer;
-  border: 2px solid transparent;
+  border: 1px solid var(--border);
   transition: all .15s ease;
   user-select:none;
 }
 
-.tone:hover{ background:#efefef; }
+.tone:hover{
+  background: var(--primary-soft);
+  border-color: rgba(216,76,134,.20);
+}
 
 .tone input{ display:none; }
 
 .swatch{
   width: 36px;
   height: 28px;
-  border-radius: 8px;
-  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.12);
 }
 
 .tone span:last-child{
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
 }
 
 .tone input:checked + .swatch{
-  outline: 3px solid #111;
+  outline: 3px solid var(--primary);
 }
 
-.hint{
-  display:block;
-  margin-top: 8px;
-  color:#666;
-  font-size: 12px;
-}
-
-
+/* =========================
+   LAYOUT HELPERS
+   ========================= */
 .palette{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
   margin-top:10px;
 }
+
 .colorBox{
   width:48px;
   height:48px;
   border-radius:12px;
-  border:1px solid #ddd;
+  border:1px solid rgba(0,0,0,.10);
 }
+
 .grid2{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 900px){
+  .catalog{ grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 700px){
+  .grid{ grid-template-columns: 1fr; }
+  .row{ flex-direction: column; }
   .grid2{ grid-template-columns: 1fr; }
 }
+
+@media (max-width: 600px){
+  .catalog{ grid-template-columns: 1fr; }
+  .cardProduct .pimg{ height: 250px; }
+}
+

@@ -1,13 +1,11 @@
 const { GoogleGenAI } = require("@google/genai");
 
 function splitDataUrl(dataUrl) {
-  // data:image/png;base64,AAA...  ó data:image/jpeg;base64,AAA...
   if (!dataUrl || typeof dataUrl !== "string") {
     return { mimeType: "image/png", data: "" };
   }
 
   if (!dataUrl.includes("base64,")) {
-    // si viene solo base64 limpio, asumimos png
     return { mimeType: "image/png", data: dataUrl };
   }
 
@@ -22,11 +20,28 @@ async function nanoBananaTryOn({ personaBase64, prendaBase64 }) {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const prompt = `
-Edit the FIRST image.
-Keep the same person identity, face, skin tone, pose and background.
-Replace ONLY the clothing with the garment shown in the SECOND image.
-Make it realistic: natural fit, correct scale, shadows, lighting and fabric texture.
-Do NOT change the face, body shape or background.
+You are editing the FIRST image using the garment from the SECOND image.
+
+GOAL:
+1) Dress the person in the FIRST image with the garment shown in the SECOND image, realistically.
+2) If the person in the FIRST image is cropped (only face/upper body/half body), EXTEND (outpaint) the image to show a FULL BODY view logically and naturally.
+
+HARD RULES (must follow):
+- DO NOT change the face. Do not alter facial features, identity, hairstyle, skin tone, expression, or any pixels of the visible face region.
+- Do NOT create a new face. Do NOT replace the head. Do NOT generate a different person.
+- Keep the same person identity and keep the same background style/lighting.
+- Replace ONLY the clothing with the garment from the SECOND image (fit, texture, folds, shadows must look real).
+- Keep body proportions consistent with the visible part of the person. No extreme changes.
+
+OUTPAINTING / COMPLETION RULES:
+- If the image is cropped, extend the canvas downward (and if needed slightly sideways) to complete the missing body parts.
+- The completed lower body should match the person’s body type implied by the visible torso/arms/legs.
+- The completed background must blend seamlessly with the original background (same color, lighting, perspective).
+- If legs/feet are missing, generate them naturally and consistent with the pose.
+- Do not add extra people, text, logos, watermarks, or artifacts.
+
+OUTPUT:
+- Return a single realistic final image.
 `.trim();
 
   const p1 = splitDataUrl(personaBase64);
@@ -38,14 +53,16 @@ Do NOT change the face, body shape or background.
 
   const response = await ai.models.generateContent({
     model: process.env.GEMINI_MODEL || "gemini-2.5-flash-image",
-    contents: [{
-      role: "user",
-      parts: [
-        { text: prompt },
-        { inlineData: { mimeType: p1.mimeType, data: p1.data } },
-        { inlineData: { mimeType: p2.mimeType, data: p2.data } }
-      ]
-    }],
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: p1.mimeType, data: p1.data } },
+          { inlineData: { mimeType: p2.mimeType, data: p2.data } }
+        ]
+      }
+    ],
     config: { responseModalities: ["Image"] }
   });
 

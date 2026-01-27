@@ -76,4 +76,55 @@ router.get("/", async (req, res) => {
   }
 });
 
+// =======================================
+// GET /api/catalogo/all
+// Catálogo completo (sin filtros)
+// =======================================
+router.get("/all", async (req, res) => {
+  try {
+    const pool = await getPool();
+
+    const prendas = await pool.request().query(`
+      SELECT DISTINCT
+        p.Id, p.Nombre, p.Categoria, p.Color, p.Precio, p.Stock, p.Activo,
+        p.OverlayUrl,
+
+        (SELECT TOP 1 Url
+         FROM PrendaImagenes
+         WHERE PrendaId = p.Id AND Tipo = 'frente' AND Activo = 1
+         ORDER BY Orden ASC) AS imgFrente,
+
+        (SELECT TOP 1 Url
+         FROM PrendaImagenes
+         WHERE PrendaId = p.Id AND Tipo = 'atras' AND Activo = 1
+         ORDER BY Orden ASC) AS imgAtras
+
+      FROM Prendas p
+      WHERE p.Activo = 1 AND p.Stock > 0
+      ORDER BY p.Id DESC
+    `);
+
+    const list = prendas.recordset.map(p => ({
+      ...p,
+      imgFrente: p.imgFrente || "",
+      imgAtras: p.imgAtras || ""
+    }));
+
+    res.json({
+      modo: "completo",
+      prendas: list
+    });
+
+  } catch (e) {
+    console.error("Error catálogo completo:", e);
+    res.status(500).json({
+      error: "Error catálogo completo",
+      detail: String(e.message || e)
+    });
+  }
+});
+
+
 module.exports = router;
+
+
