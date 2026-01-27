@@ -1,6 +1,8 @@
 const API = "http://localhost:8013";
 const el = (id) => document.getElementById(id);
 
+const STORAGE_KEY_MODE = "catalogMode"; // "recomendado" | "completo"
+
 function setMsg(t, ok=false) {
   el("msg").textContent = t;
   el("msg").className = ok ? "msg ok" : "msg";
@@ -10,13 +12,36 @@ function safeStr(x) {
   return (typeof x === "string") ? x : "";
 }
 
+function getMode() {
+  return localStorage.getItem(STORAGE_KEY_MODE) || "recomendado";
+}
+
+function setMode(mode) {
+  localStorage.setItem(STORAGE_KEY_MODE, mode);
+  updateModeUI(mode);
+}
+
+// ✅ Extra pro: botones inteligentes
+function updateModeUI(mode) {
+  const btnAll = el("btnAll");
+  const btnRec = el("btnRec");
+
+  if (!btnAll || !btnRec) return;
+
+  if (mode === "completo") {
+    btnAll.classList.add("hidden");     // ya estás en completo → oculto
+    btnRec.classList.remove("hidden");  // muestro volver a recomendados
+  } else {
+    btnRec.classList.add("hidden");     // ya estás en recomendados → oculto
+    btnAll.classList.remove("hidden");  // muestro ver todo
+  }
+}
+
 function renderCatalog(prendas, contextText = "") {
   const cont = el("catalog");
   cont.innerHTML = "";
 
-  if (contextText) {
-    el("context").textContent = contextText;
-  }
+  if (contextText) el("context").textContent = contextText;
 
   if (!prendas || !prendas.length) {
     setMsg("No hay prendas disponibles");
@@ -51,6 +76,10 @@ function renderCatalog(prendas, contextText = "") {
       localStorage.setItem("prendaId", String(p.Id));
       localStorage.setItem("prendaNombre", safeStr(p.Nombre));
       localStorage.setItem("prendaImgFrente", imgFrente || "");
+
+      // ✅ Guarda el modo actual para volver igual desde tryon
+      localStorage.setItem("catalogReturnMode", getMode());
+
       window.location.href = "tryon.html";
     };
 
@@ -60,10 +89,7 @@ function renderCatalog(prendas, contextText = "") {
   setMsg("", true);
 }
 
-// ========================
-// Catálogo recomendado
-// ========================
-async function loadCatalog() {
+async function loadCatalogRecommended() {
   const clienteId = localStorage.getItem("clienteId");
   if (!clienteId) {
     alert("No hay clienteId. Vuelve a la encuesta.");
@@ -85,13 +111,12 @@ async function loadCatalog() {
     data.prendas,
     `Recomendado para ti · ${data.tipoCuerpo} · ${data.ocasion}`
   );
+
+  setMode("recomendado");
 }
 
-// ========================
-// Catálogo completo
-// ========================
 async function loadCatalogAll() {
-  setMsg("Cargando todo el catálogo", true);
+  setMsg("Cargando todo el catálogo...", true);
 
   const r = await fetch(`${API}/api/catalogo/all`);
   const data = await r.json();
@@ -101,14 +126,28 @@ async function loadCatalogAll() {
     return;
   }
 
-  renderCatalog(
-    data.prendas,
-    "Todo el catálogo disponible"
-  );
+  renderCatalog(data.prendas, "Todo el catálogo disponible");
+  setMode("completo");
+}
+
+async function initCatalog() {
+  // ✅ Si venimos desde tryon, respeta el modo anterior
+  const returnMode = localStorage.getItem("catalogReturnMode");
+  if (returnMode) {
+    localStorage.removeItem("catalogReturnMode");
+    setMode(returnMode);
+  } else {
+    updateModeUI(getMode());
+  }
+
+  const mode = getMode();
+  if (mode === "completo") return loadCatalogAll();
+  return loadCatalogRecommended();
 }
 
 // Eventos
 el("btnBack").onclick = () => window.location.href = "result.html";
 el("btnAll").onclick  = () => loadCatalogAll();
+el("btnRec").onclick  = () => loadCatalogRecommended();
 
-loadCatalog().catch(e => setMsg("Error: " + (e.message || e)));
+initCatalog().catch(e => setMsg("Error: " + (e.message || e)));

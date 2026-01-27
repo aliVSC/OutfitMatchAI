@@ -64,10 +64,10 @@ async function saveTryOn() {
     return;
   }
 
-  setMsg("Guardado ✅", true);
+  setMsg("Guardado", true);
 }
 
-// ✅ NUEVO: salir y limpiar datos para otro usuario
+// NUEVO: salir y limpiar datos para otro usuario
 function exitForNewUser() {
   // Limpia lo necesario para que otra persona empiece desde 0
   localStorage.removeItem("clienteId");
@@ -86,5 +86,4 @@ function exitForNewUser() {
 el("btnAI").onclick = () => renderAI().catch(e => setMsg("Error: " + e.message));
 el("btnSave").onclick = () => saveTryOn().catch(e => setMsg("Error: " + e.message));
 el("btnBack").onclick = () => window.location.href = "catalog.html";
-
 el("btnExit").onclick = exitForNewUser;

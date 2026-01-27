@@ -337,3 +337,29 @@ video{
   .cardProduct .pimg{ height: 250px; }
 }
 
+/* ====== TOP BAR CATÁLOGO (sticky) ====== */
+.catalogTopBar{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(246, 247, 251, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 14px 0 10px 0;
+  margin-bottom: 12px;
+}
+
+.topButtons{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.catalogTopBar h1{
+  margin: 0 0 6px 0;
+}
+
+.catalogTopBar .msg{
+  margin-top: 10px;
+}

@@ -8,20 +8,22 @@
   </head>
   <body>
     <div class="container">
-      <h1>Catálogo recomendado</h1>
-      <p id="context" class="subtitle"></p>
+      <div class="catalogTopBar">
+        <div>
+          <h1>Catálogo</h1>
+          <p id="context" class="subtitle"></p>
+        </div>
 
-      <div id="catalog" class="catalog"></div>
-
-      <div class="card">
-        <div class="row">
-          <button id="btnAll" class="primary">Ver todo el catálogo 💖</button>
-
+        <div class="topButtons">
+          <button id="btnAll" class="primary">Ver todo el catálogo</button>
+          <button id="btnRec" class="secondary">Volver a recomendados ✨</button>
           <button id="btnBack" class="secondary">Volver al resultado</button>
         </div>
 
         <p id="msg" class="msg"></p>
       </div>
+
+      <div id="catalog" class="catalog"></div>
     </div>
 
     <script src="js/catalog.js"></script>
