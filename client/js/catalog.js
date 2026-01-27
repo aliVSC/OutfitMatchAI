@@ -3,13 +3,13 @@ const el = (id) => document.getElementById(id);
 
 const STORAGE_KEY_MODE = "catalogMode"; // "recomendado" | "completo"
 
-function setMsg(t, ok=false) {
+function setMsg(t, ok = false) {
   el("msg").textContent = t;
   el("msg").className = ok ? "msg ok" : "msg";
 }
 
 function safeStr(x) {
-  return (typeof x === "string") ? x : "";
+  return typeof x === "string" ? x : "";
 }
 
 function getMode() {
@@ -21,19 +21,18 @@ function setMode(mode) {
   updateModeUI(mode);
 }
 
-// ✅ Extra pro: botones inteligentes
+// ✅ Botones inteligentes
 function updateModeUI(mode) {
   const btnAll = el("btnAll");
   const btnRec = el("btnRec");
-
   if (!btnAll || !btnRec) return;
 
   if (mode === "completo") {
-    btnAll.classList.add("hidden");     // ya estás en completo → oculto
-    btnRec.classList.remove("hidden");  // muestro volver a recomendados
+    btnAll.classList.add("hidden");
+    btnRec.classList.remove("hidden");
   } else {
-    btnRec.classList.add("hidden");     // ya estás en recomendados → oculto
-    btnAll.classList.remove("hidden");  // muestro ver todo
+    btnRec.classList.add("hidden");
+    btnAll.classList.remove("hidden");
   }
 }
 
@@ -48,9 +47,9 @@ function renderCatalog(prendas, contextText = "") {
     return;
   }
 
-  prendas.forEach(p => {
+  prendas.forEach((p) => {
     const imgFrente = safeStr(p.imgFrente) || safeStr(p.ImagenUrl);
-    const imgAtras  = safeStr(p.imgAtras);
+    const imgAtras = safeStr(p.imgAtras);
 
     const div = document.createElement("div");
     div.className = "cardProduct";
@@ -63,22 +62,27 @@ function renderCatalog(prendas, contextText = "") {
       ${imgHtml}
       <h3>${safeStr(p.Nombre)}</h3>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)}</p>
-      <button class="primary">Generar con IA</button>
+      <button class="primary btnGenAI">Generar con IA</button>
     `;
 
+    // Hover a "atrás"
     const img = div.querySelector(".pimg");
     if (img && img.tagName === "IMG" && imgAtras) {
-      img.addEventListener("mouseenter", () => img.src = imgAtras);
-      img.addEventListener("mouseleave", () => img.src = imgFrente);
+      img.addEventListener("mouseenter", () => (img.src = imgAtras));
+      img.addEventListener("mouseleave", () => (img.src = imgFrente));
     }
 
-    div.querySelector("button").onclick = () => {
+    // ✅ Generar con IA -> redirige y auto-genera en tryon
+    div.querySelector(".btnGenAI").onclick = () => {
       localStorage.setItem("prendaId", String(p.Id));
       localStorage.setItem("prendaNombre", safeStr(p.Nombre));
       localStorage.setItem("prendaImgFrente", imgFrente || "");
 
-      // ✅ Guarda el modo actual para volver igual desde tryon
+      // Mantener modo (recomendado/completo) al volver
       localStorage.setItem("catalogReturnMode", getMode());
+
+      // ✅ Bandera para auto-generar apenas abra tryon
+      localStorage.setItem("autoGenerateAI", "1");
 
       window.location.href = "tryon.html";
     };
@@ -146,8 +150,8 @@ async function initCatalog() {
 }
 
 // Eventos
-el("btnBack").onclick = () => window.location.href = "result.html";
-el("btnAll").onclick  = () => loadCatalogAll();
-el("btnRec").onclick  = () => loadCatalogRecommended();
+el("btnBack").onclick = () => (window.location.href = "result.html");
+el("btnAll").onclick = () => loadCatalogAll();
+el("btnRec").onclick = () => loadCatalogRecommended();
 
-initCatalog().catch(e => setMsg("Error: " + (e.message || e)));
+initCatalog().catch((e) => setMsg("Error: " + (e.message || e)));
