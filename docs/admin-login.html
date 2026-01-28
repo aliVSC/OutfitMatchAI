@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OutfitMatch - Admin Login</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="container">
+
+    <div class="card hero">
+      <div class="heroTop">
+        <img class="logo" src="img/logo.png" alt="OutfitMatch" onerror="this.style.display='none'">
+        <div>
+          <h1 style="margin:0;">Acceso Administrador</h1>
+          <p class="subtitle" style="margin-top:6px;">
+            Ingresa tu clave para acceder al Dashboard.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <div>
+          <label>ADMIN KEY</label>
+          <input id="adminKey" type="password" placeholder="••••••••" />
+          <p class="hint">No compartas esta clave.</p>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="btnLogin" class="primary">Ingresar</button>
+        <button id="btnBack" class="secondary">Volver</button>
+      </div>
+
+      <p id="msg" class="msg"></p>
+    </div>
+
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/idle.js"></script>
+  <script src="js/admin-login.js"></script>
+</body>
+</html>

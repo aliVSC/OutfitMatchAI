@@ -39,10 +39,6 @@ function getAdminKey() {
   return localStorage.getItem(STORAGE_ADMIN_KEY) || "";
 }
 
-function setAdminKey(k) {
-  localStorage.setItem(STORAGE_ADMIN_KEY, k);
-}
-
 function logout() {
   localStorage.removeItem(STORAGE_ADMIN_KEY);
   window.location.href = "index.html";
@@ -68,27 +64,25 @@ async function adminFetch(path, opts={}) {
 }
 
 // ------------------------
-// Login (simple)
+// Login (sin prompt)
 // ------------------------
 async function ensureLogin() {
-  let key = getAdminKey();
-
-  // Si no hay key guardada, pedirla
+  const key = getAdminKey();
   if (!key) {
-    key = prompt("Ingresa tu ADMIN KEY:");
-    if (!key) throw new Error("Cancelado");
-    setAdminKey(key);
+    window.location.href = "admin-login.html";
+    throw new Error("No autenticado");
   }
 
-  // validar contra backend
   const r = await fetch(`${API}/api/admin/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key })
   });
+
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.ok) {
     localStorage.removeItem(STORAGE_ADMIN_KEY);
+    window.location.href = "admin-login.html";
     throw new Error(data.error || "ADMIN KEY inválida");
   }
 }
@@ -146,7 +140,6 @@ async function savePrenda() {
   const f = getPrendaForm();
   setMsg("Guardando prenda...", true);
 
-  // normalizar strings vacíos
   const payload = {
     Nombre: f.Nombre || null,
     Categoria: f.Categoria || null,
@@ -207,7 +200,6 @@ async function loadPrendas() {
       <h3>${p.Nombre || "(sin nombre)"}</h3>
       <p class="meta">ID: ${p.Id} · ${p.Categoria || "-"} · Stock: ${p.Stock ?? "-"}</p>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)} · ${p.Activo ? "Activa ✅" : "Inactiva ❌"}</p>
-
       <div class="row">
         <button class="secondary btnEdit">Editar</button>
         <button class="secondary btnToggle">${p.Activo ? "Desactivar" : "Activar"}</button>
@@ -238,7 +230,6 @@ async function loadClientes() {
     return;
   }
 
-  // render simple
   cont.innerHTML = `
     <div style="overflow:auto;">
       <table style="width:100%; border-collapse:collapse;">
@@ -278,7 +269,6 @@ async function init() {
   try {
     await ensureLogin();
 
-    // tabs
     el("tabDashboard").onclick = async () => {
       setActiveTab("tabDashboard");
       showView("viewDashboard");
@@ -299,21 +289,17 @@ async function init() {
 
     el("btnLogout").onclick = logout;
 
-    // prendas actions
     el("btnGuardarPrenda").onclick = () => savePrenda().catch(e => setMsg("Error: " + e.message));
     el("btnLimpiarPrenda").onclick = clearPrendaForm;
     el("btnRefrescarPrendas").onclick = () => loadPrendas().catch(e => setMsg("Error: " + e.message));
     el("btnRefrescarClientes").onclick = () => loadClientes().catch(e => setMsg("Error: " + e.message));
 
-    // arranque: dashboard
     setActiveTab("tabDashboard");
     showView("viewDashboard");
     await loadDashboard();
 
   } catch (e) {
     setMsg("Error: " + (e.message || e));
-    alert("No se pudo entrar al Admin: " + (e.message || e));
-    logout();
   }
 }
 

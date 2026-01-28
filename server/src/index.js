@@ -7,8 +7,6 @@ const perfil = require("./routes/perfil");
 const catalogo = require("./routes/catalogo");
 const tryon = require("./routes/tryon");
 const recomendaciones = require("./routes/recomendaciones");
-
-// ✅ NUEVO
 const admin = require("./routes/admin");
 
 const app = express();
@@ -31,7 +29,7 @@ app.use("/api/catalogo", catalogo);
 app.use("/api/tryon", tryon);
 app.use("/api/recomendaciones", recomendaciones);
 
-// ✅ NUEVO
+
 app.use("/api/admin", admin);
 
 const PORT = process.env.PORT || 3000;

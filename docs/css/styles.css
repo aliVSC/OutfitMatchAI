@@ -363,3 +363,19 @@ video{
 .catalogTopBar .msg{
   margin-top: 10px;
 }
+
+.heroTop{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.logo{
+  width:56px;
+  height:56px;
+  object-fit:contain;
+  border-radius:14px;
+}
+.hero{
+  max-width:720px;
+  margin:0 auto;
+}
