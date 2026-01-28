@@ -1,4 +1,4 @@
-const API = "http://localhost:8013";
+const API = window.API_BASE || "http://localhost:8013";
 const el = (id) => document.getElementById(id);
 
 const STORAGE_KEY_MODE = "catalogMode"; // "recomendado" | "completo"

@@ -1,4 +1,4 @@
-const API = "http://localhost:8013";
+const API = window.API_BASE || "http://localhost:8013";
 const el = (id) => document.getElementById(id);
 
 function setMsg(t, ok = false) {
