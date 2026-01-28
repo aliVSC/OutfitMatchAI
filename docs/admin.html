@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OutfitMatch - Admin</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="container">
+
+    <div class="card">
+      <h1>Panel Administrador</h1>
+      <p class="subtitle">Gestión de catálogo, clientes y métricas.</p>
+
+      <div class="row">
+        <button id="tabDashboard" class="primary">Dashboard</button>
+        <button id="tabPrendas" class="secondary">Prendas</button>
+        <button id="tabClientes" class="secondary">Clientes</button>
+        <button id="btnLogout" class="secondary">Salir</button>
+      </div>
+
+      <p id="msg" class="msg"></p>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="viewDashboard" class="card hidden">
+      <h2>Dashboard (Hoy)</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3>Total clientes</h3>
+          <p id="kpiTotalClientes" class="price">0</p>
+        </div>
+        <div class="card">
+          <h3>Clientes hoy</h3>
+          <p id="kpiClientesHoy" class="price">0</p>
+        </div>
+        <div class="card">
+          <h3>Prendas activas</h3>
+          <p id="kpiPrendasActivas" class="price">0</p>
+        </div>
+        <div class="card">
+          <h3>Try-ons hoy</h3>
+          <p id="kpiTryonsHoy" class="price">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRENDAS -->
+    <div id="viewPrendas" class="card hidden">
+      <h2>Prendas</h2>
+
+      <div class="grid">
+        <div>
+          <label>Id (para editar)</label>
+          <input id="pId" placeholder="vacío = crear" />
+        </div>
+        <div>
+          <label>Nombre</label>
+          <input id="pNombre" placeholder="Ej: Vestido rosa" />
+        </div>
+
+        <div>
+          <label>Categoría</label>
+          <input id="pCategoria" placeholder="Ej: vestidos" />
+        </div>
+
+        <div>
+          <label>Color</label>
+          <input id="pColor" placeholder="Ej: rosado" />
+        </div>
+
+        <div>
+          <label>Precio</label>
+          <input id="pPrecio" type="number" step="0.01" placeholder="19.99" />
+        </div>
+
+        <div>
+          <label>Stock</label>
+          <input id="pStock" type="number" placeholder="10" />
+        </div>
+
+        <div>
+          <label>ImagenUrl (frente)</label>
+          <input id="pImagenUrl" placeholder="https://..." />
+        </div>
+
+        <div>
+          <label>OverlayUrl (PNG overlay)</label>
+          <input id="pOverlayUrl" placeholder="https://..." />
+        </div>
+
+        <div>
+          <label>Activo</label>
+          <select id="pActivo">
+            <option value="1">Sí</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="btnGuardarPrenda" class="primary">Guardar prenda</button>
+        <button id="btnLimpiarPrenda" class="secondary">Limpiar</button>
+        <button id="btnRefrescarPrendas" class="secondary">Refrescar lista</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #eee;margin:16px 0;" />
+
+      <div id="prendasList" class="catalog"></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="viewClientes" class="card hidden">
+      <h2>Clientes</h2>
+      <div class="row">
+        <button id="btnRefrescarClientes" class="secondary">Refrescar</button>
+      </div>
+      <div id="clientesList" class="card"></div>
+    </div>
+
+  </div>
+
+  <!-- ✅ Config primero -->
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
