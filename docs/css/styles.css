@@ -26,11 +26,15 @@
    ========================= */
 * { box-sizing: border-box; }
 
+
 body{
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #ffffff
+  background: #ffffff;
+  color: var(--text);
+  min-height: 100vh;
 }
+
 
 .container{
   max-width: 980px;
@@ -378,4 +382,66 @@ video{
 .hero{
   max-width:720px;
   margin:0 auto;
+}
+
+/* =========================
+   HOME (index) - centrado + más bonito
+   ========================= */
+
+/* Solo afecta cuando existe .hero (tu index) */
+body:has(.hero){
+  display: grid;
+  place-items: center;
+}
+
+/* En home el container ya no “se pega arriba” */
+body:has(.hero) .container{
+  width: 100%;
+  padding: 28px 24px;
+}
+
+/* Tarjeta hero más pro */
+.hero{
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 60px rgba(0,0,0,.10);
+}
+
+/* Header más alineado */
+.heroTop{
+  align-items: center;
+}
+
+/* Logo un poquito más “premium” */
+.hero .logo{
+  width: 62px;
+  height: 62px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.06);
+  padding: 6px;
+}
+
+/* Botones en home: que se vean bien y se adapten */
+.hero .row{
+  margin-top: 16px !important; /* pisa el inline style */
+}
+
+.hero .row button{
+  min-width: 180px;
+}
+
+/* Responsive */
+@media (max-width: 520px){
+  .hero .row{
+    flex-direction: column;
+  }
+  .hero .row button{
+    width: 100%;
+    min-width: 0;
+  }
 }
