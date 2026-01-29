@@ -7,8 +7,6 @@ function setMsg(t, ok=false) {
 }
 
 const STORAGE_ADMIN_KEY = "adminKey";
-
-// ✅ ID de edición interno (ya NO se muestra en inputs)
 let editingPrendaId = null;
 
 // ------------------------
@@ -58,9 +56,7 @@ async function adminFetch(path, opts={}) {
 
   const r = await fetch(`${API}${path}`, { ...opts, headers });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    throw new Error((data.error || "Error") + (data.detail ? " | " + data.detail : ""));
-  }
+  if (!r.ok) throw new Error((data.error || "Error") + (data.detail ? " | " + data.detail : ""));
   return data;
 }
 
@@ -132,7 +128,7 @@ function getPrendaForm() {
     Color: el("pColor").value.trim(),
     Precio: el("pPrecio").value === "" ? null : Number(el("pPrecio").value),
     Stock: el("pStock").value === "" ? null : Number(el("pStock").value),
-    OverlayUrl: el("pOverlayUrl").value.trim(),
+    OverlayUrl: el("pOverlayUrl").value.trim(), // opcional, ya NO es obligatorio
     Activo: Number(el("pActivo").value || "1")
   };
 }
@@ -158,23 +154,27 @@ function clearPrendaForm() {
   el("imgFrente").value = "";
   el("imgAtras").value = "";
   el("imgExtras").value = "";
+  el("imgOverlay").value = "";
 
   el("prevFrente").classList.add("hidden");
   el("prevAtras").classList.add("hidden");
+  el("prevOverlay").classList.add("hidden");
   el("extrasPreview").innerHTML = "";
 }
 
 async function collectImagesPayload() {
-  const frenteFile = el("imgFrente").files?.[0] || null;
-  const atrasFile  = el("imgAtras").files?.[0] || null;
+  const frenteFile  = el("imgFrente").files?.[0] || null;
+  const atrasFile   = el("imgAtras").files?.[0] || null;
+  const overlayFile = el("imgOverlay").files?.[0] || null;
   const extrasFiles = Array.from(el("imgExtras").files || []);
 
   if (!editingPrendaId && !frenteFile) {
-    // ✅ al crear: frente obligatoria
     throw new Error("La foto de frente es obligatoria para crear la prenda.");
   }
+  if (!editingPrendaId && !overlayFile) {
+    throw new Error("El Overlay PNG es obligatorio para usar TryOn IA.");
+  }
 
-  // Si estás editando, la imagen puede ser opcional (solo si quieres cambiarla)
   const images = [];
 
   if (frenteFile) {
@@ -185,6 +185,12 @@ async function collectImagesPayload() {
   if (atrasFile) {
     const dataUrl = await fileToDataUrl(atrasFile);
     images.push({ Tipo: "atras", Url: dataUrl, Orden: 1, Activo: 1 });
+  }
+
+  // ✅ overlay => tipo "overlay"
+  if (overlayFile) {
+    const dataUrl = await fileToDataUrl(overlayFile);
+    images.push({ Tipo: "overlay", Url: dataUrl, Orden: 1, Activo: 1 });
   }
 
   // extras => tipo "extra"
@@ -200,7 +206,6 @@ async function savePrenda() {
   const f = getPrendaForm();
   setMsg("Preparando datos...", true);
 
-  // normalizar
   const payload = {
     Nombre: f.Nombre || null,
     Categoria: f.Categoria || null,
@@ -209,7 +214,6 @@ async function savePrenda() {
     Stock: f.Stock,
     Activo: f.Activo ? 1 : 0,
     OverlayUrl: f.OverlayUrl || null,
-    // ✅ NUEVO: imágenes que vienen desde el input file
     Imagenes: await collectImagesPayload()
   };
 
@@ -254,14 +258,14 @@ function fillPrendaForEdit(p) {
   el("pOverlayUrl").value = p.OverlayUrl ?? "";
   el("pActivo").value = p.Activo ? "1" : "0";
 
-  // previews desde DB (si existen)
   if (p.imgFrente) showPreview("prevFrente", p.imgFrente);
   if (p.imgAtras) showPreview("prevAtras", p.imgAtras);
+  if (p.imgOverlay) showPreview("prevOverlay", p.imgOverlay);
 
-  // limpiar inputs para que si no eliges archivo, no reemplaza
   el("imgFrente").value = "";
   el("imgAtras").value = "";
   el("imgExtras").value = "";
+  el("imgOverlay").value = "";
   el("extrasPreview").innerHTML = "";
 }
 
@@ -289,6 +293,7 @@ async function loadPrendas() {
       <h3>${p.Nombre || "(sin nombre)"}</h3>
       <p class="meta">${p.Categoria || "-"} · Stock: ${p.Stock ?? "-"}</p>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)} · ${p.Activo ? "Activa ✅" : "Inactiva ❌"}</p>
+      <p class="meta">${p.imgOverlay ? "Overlay ✅" : "Overlay ❌"}</p>
 
       <div class="row">
         <button class="secondary btnEdit">Editar</button>
@@ -305,7 +310,7 @@ async function loadPrendas() {
   setMsg("", true);
 }
 
-// previews en vivo al seleccionar archivo
+// previews en vivo
 el("imgFrente")?.addEventListener("change", async () => {
   const f = el("imgFrente").files?.[0];
   if (!f) return;
@@ -316,6 +321,12 @@ el("imgAtras")?.addEventListener("change", async () => {
   const f = el("imgAtras").files?.[0];
   if (!f) return;
   showPreview("prevAtras", await fileToDataUrl(f));
+});
+
+el("imgOverlay")?.addEventListener("change", async () => {
+  const f = el("imgOverlay").files?.[0];
+  if (!f) return;
+  showPreview("prevOverlay", await fileToDataUrl(f));
 });
 
 el("imgExtras")?.addEventListener("change", async () => {
@@ -390,7 +401,6 @@ async function init() {
     await ensureLogin();
     setEditHint();
 
-    // tabs
     el("tabDashboard").onclick = async () => {
       setActiveTab("tabDashboard");
       showView("viewDashboard");
@@ -411,13 +421,11 @@ async function init() {
 
     el("btnLogout").onclick = logout;
 
-    // prendas actions
     el("btnGuardarPrenda").onclick = () => savePrenda().catch(e => setMsg("Error: " + e.message));
     el("btnLimpiarPrenda").onclick = clearPrendaForm;
     el("btnRefrescarPrendas").onclick = () => loadPrendas().catch(e => setMsg("Error: " + e.message));
     el("btnRefrescarClientes").onclick = () => loadClientes().catch(e => setMsg("Error: " + e.message));
 
-    // arranque: dashboard
     setActiveTab("tabDashboard");
     showView("viewDashboard");
     await loadDashboard();

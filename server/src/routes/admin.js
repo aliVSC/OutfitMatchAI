@@ -26,6 +26,31 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Helper: insertar imágenes (frente/atras/extra/overlay)
+async function insertImages(pool, prendaId, imagenes) {
+  if (!Array.isArray(imagenes) || imagenes.length === 0) return;
+
+  for (const im of imagenes) {
+    const Tipo = (im.Tipo || "").toLowerCase();
+    const Url = im.Url || "";
+    const Orden = Number(im.Orden || 1);
+    const Activo = 1;
+
+    if (!Tipo || !Url) continue;
+
+    await pool.request()
+      .input("PrendaId", sql.Int, prendaId)
+      .input("Tipo", sql.NVarChar(20), Tipo)
+      .input("Url", sql.NVarChar(sql.MAX), Url)
+      .input("Orden", sql.Int, Orden)
+      .input("Activo", sql.Bit, Activo)
+      .query(`
+        INSERT INTO PrendaImagenes (PrendaId, Tipo, Url, Orden, Activo)
+        VALUES (@PrendaId, @Tipo, @Url, @Orden, @Activo)
+      `);
+  }
+}
+
 // ======================================================
 // GET /api/admin/prendas
 // ======================================================
@@ -37,7 +62,8 @@ router.get("/prendas", requireAdmin, async (req, res) => {
         p.Id, p.Nombre, p.Categoria, p.Color, p.Precio, p.Stock, p.Activo,
         p.ImagenUrl, p.OverlayUrl,
         (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='frente' AND Activo=1 ORDER BY Orden ASC) AS imgFrente,
-        (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='atras' AND Activo=1 ORDER BY Orden ASC) AS imgAtras
+        (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='atras' AND Activo=1 ORDER BY Orden ASC) AS imgAtras,
+        (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='overlay' AND Activo=1 ORDER BY Orden ASC) AS imgOverlay
       FROM Prendas p
       ORDER BY p.Id DESC
     `);
@@ -46,31 +72,6 @@ router.get("/prendas", requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Error listando prendas", detail: String(e.message || e) });
   }
 });
-
-// Helper: insertar imágenes (frente/atras/extra)
-async function insertImages(pool, prendaId, imagenes) {
-  if (!Array.isArray(imagenes) || imagenes.length === 0) return;
-
-  for (const im of imagenes) {
-    const Tipo = (im.Tipo || "").toLowerCase();
-    const Url = im.Url || "";
-    const Orden = Number(im.Orden || 1);
-    const Activo = im.Activo ? 1 : 1;
-
-    if (!Tipo || !Url) continue;
-
-    await pool.request()
-      .input("PrendaId", sql.Int, prendaId)
-      .input("Tipo", sql.NVarChar(20), Tipo)
-      .input("Url", sql.NVarChar(sql.MAX), Url) // ✅ NVARCHAR(MAX)
-      .input("Orden", sql.Int, Orden)
-      .input("Activo", sql.Bit, Activo)
-      .query(`
-        INSERT INTO PrendaImagenes (PrendaId, Tipo, Url, Orden, Activo)
-        VALUES (@PrendaId, @Tipo, @Url, @Orden, @Activo)
-      `);
-  }
-}
 
 // ======================================================
 // POST /api/admin/prendas
@@ -85,13 +86,14 @@ router.post("/prendas", requireAdmin, async (req, res) => {
       Imagenes
     } = req.body || {};
 
-    // Frente obligatoria para crear
     const tieneFrente = Array.isArray(Imagenes) && Imagenes.some(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url);
     if (!tieneFrente) return res.status(400).json({ error: "Falta imagen de frente" });
 
+    const tieneOverlay = Array.isArray(Imagenes) && Imagenes.some(x => (x.Tipo || "").toLowerCase() === "overlay" && x.Url);
+    if (!tieneOverlay) return res.status(400).json({ error: "Falta overlay PNG (Tipo=overlay)" });
+
     const pool = await getPool();
 
-    // Tomar frente para guardar también en Prendas.ImagenUrl (compatibilidad)
     const frente = Imagenes.find(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url)?.Url || null;
 
     const r = await pool.request()
@@ -101,7 +103,7 @@ router.post("/prendas", requireAdmin, async (req, res) => {
       .input("Precio", sql.Decimal(10,2), (Precio ?? null))
       .input("Stock", sql.Int, (Stock ?? null))
       .input("Activo", sql.Bit, (Activo ?? 1))
-      .input("ImagenUrl", sql.NVarChar(sql.MAX), frente) // ✅ guarda base64 también aquí
+      .input("ImagenUrl", sql.NVarChar(sql.MAX), frente)
       .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null)
       .query(`
         INSERT INTO Prendas (Nombre, Categoria, Color, Precio, Stock, Activo, ImagenUrl, OverlayUrl)
@@ -120,7 +122,7 @@ router.post("/prendas", requireAdmin, async (req, res) => {
 
 // ======================================================
 // PUT /api/admin/prendas/:id
-// body: { ..., Imagenes:[] }  (si envías imágenes nuevas, reemplaza las anteriores)
+// body: { ..., Imagenes:[] } (si envías imágenes nuevas, reemplaza PrendaImagenes)
 // ======================================================
 router.put("/prendas/:id", requireAdmin, async (req, res) => {
   try {
@@ -136,7 +138,6 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
 
     const pool = await getPool();
 
-    // Si viene una imagen de frente en Imagenes, actualizamos ImagenUrl con ella
     const frenteNueva = Array.isArray(Imagenes)
       ? (Imagenes.find(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url)?.Url || null)
       : null;
@@ -150,7 +151,7 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
       .input("Stock", sql.Int, (Stock ?? null))
       .input("Activo", sql.Bit, (Activo ?? 1))
       .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null)
-      .input("ImagenUrl", sql.NVarChar(sql.MAX), frenteNueva) // puede ser null si no cambió
+      .input("ImagenUrl", sql.NVarChar(sql.MAX), frenteNueva)
       .query(`
         UPDATE Prendas
         SET
@@ -165,7 +166,7 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
         WHERE Id=@Id
       `);
 
-    // ✅ Si envías Imagenes, reemplazamos imágenes en PrendaImagenes
+    // Si envías Imagenes, reemplaza todas (frente/atras/extra/overlay)
     if (Array.isArray(Imagenes) && Imagenes.length > 0) {
       await pool.request()
         .input("Id", sql.Int, id)
@@ -242,4 +243,3 @@ router.get("/stats/today", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
-

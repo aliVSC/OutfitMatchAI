@@ -1,43 +1,45 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>OutfitMatch</title>
-  <link rel="stylesheet" href="css/home.css" />
-</head>
-<body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>OutfitMatch</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="home.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="card hero">
+        <div class="heroTop">
+          <img
+            class="logo"
+            src="assets/img/logo.png"
+            alt="OutfitMatch"
+            onerror="this.style.display = 'none'"
+          />
+          <div>
+            <h1 style="margin: 0">OutfitMatch</h1>
+            <p class="subtitle" style="margin-top: 6px">
+              Asesoría inteligente, a un clic de distancia.
+            </p>
+          </div>
+        </div>
 
-  <div class="container">
-    <div class="card hero">
-      <div class="heroTop">
-        <!-- Si tienes logo, ponlo en client/img/logo.png -->
-        <img class="logo" src="assets/img/logo.png" alt="OutfitMatch" onerror="this.style.display='none'">
-        <div>
-          <h1 style="margin:0;">OutfitMatch</h1>
-          <p class="subtitle" style="margin-top:6px;">
-            Asesoría inteligente, a un clic de distancia.
-          </p>
+        <div class="row" style="margin-top: 14px">
+          <button id="btnStart" class="primary">Iniciar encuesta</button>
+          <button id="btnAdmin" class="secondary">Administrador</button>
         </div>
       </div>
-
-      <div class="row" style="margin-top:14px;">
-        <button id="btnStart" class="primary">Iniciar encuesta</button>
-        <button id="btnAdmin" class="secondary">Administrador</button>
-      </div>
-
-      <p class="hint" style="margin-top:10px;">
-        Tip: si no hay actividad por 5 minutos, volverás a esta pantalla automáticamente.
-      </p>
     </div>
-  </div>
 
-  <!-- Idle timer en la home también está ok (no redirige si ya estás aquí) -->
-  <script src="js/idle.js"></script>
+    <!-- Idle timer en la home también está ok (no redirige si ya estás aquí) -->
+    <script src="js/idle.js"></script>
 
-  <script>
-    document.getElementById("btnStart").onclick = () => (window.location.href = "survey.html");
-    document.getElementById("btnAdmin").onclick = () => (window.location.href = "admin-login.html");
-  </script>
-</body>
+    <script>
+      document.getElementById("btnStart").onclick = () =>
+        (window.location.href = "survey.html");
+      document.getElementById("btnAdmin").onclick = () =>
+        (window.location.href = "admin-login.html");
+    </script>
+  </body>
 </html>

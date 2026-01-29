@@ -50,7 +50,6 @@
     <div id="viewPrendas" class="card hidden">
       <h2>Prendas</h2>
 
-      <!-- ID interno (no visible) -->
       <p class="hint" id="editHint">Creando prenda nueva</p>
 
       <div class="grid">
@@ -87,9 +86,10 @@
           </select>
         </div>
 
+        <!-- OverlayUrl ya NO se usa para IA, pero lo dejo por compatibilidad si tú lo quieres guardar -->
         <div>
-          <label>OverlayUrl (opcional, si usas PNG overlay)</label>
-          <input id="pOverlayUrl" placeholder="https://..." />
+          <label>OverlayUrl (opcional)</label>
+          <input id="pOverlayUrl" placeholder="(opcional) https://..." />
         </div>
       </div>
 
@@ -116,6 +116,14 @@
         <label><strong>Más fotos (opcional)</strong> (ej: laterales, detalle)</label>
         <input id="imgExtras" type="file" accept="image/*" multiple />
         <div id="extrasPreview" class="catalog"></div>
+      </div>
+
+      <!-- ✅ NUEVO: OVERLAY COMO ARCHIVO (PNG) -->
+      <div class="card">
+        <label><strong>Overlay PNG (OBLIGATORIO para TryOn IA)</strong> (debe ser PNG con transparencia)</label>
+        <input id="imgOverlay" type="file" accept="image/png" />
+        <img id="prevOverlay" class="preview hidden" alt="Vista previa overlay" />
+        <p class="hint">Este overlay se guarda en la BD como base64 (sin URL).</p>
       </div>
 
       <div class="row">
