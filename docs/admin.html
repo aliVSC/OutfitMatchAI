@@ -50,11 +50,10 @@
     <div id="viewPrendas" class="card hidden">
       <h2>Prendas</h2>
 
+      <!-- ID interno (no visible) -->
+      <p class="hint" id="editHint">Creando prenda nueva</p>
+
       <div class="grid">
-        <div>
-          <label>Id (para editar)</label>
-          <input id="pId" placeholder="vacío = crear" />
-        </div>
         <div>
           <label>Nombre</label>
           <input id="pNombre" placeholder="Ej: Vestido rosa" />
@@ -81,22 +80,42 @@
         </div>
 
         <div>
-          <label>ImagenUrl (frente)</label>
-          <input id="pImagenUrl" placeholder="https://..." />
-        </div>
-
-        <div>
-          <label>OverlayUrl (PNG overlay)</label>
-          <input id="pOverlayUrl" placeholder="https://..." />
-        </div>
-
-        <div>
           <label>Activo</label>
           <select id="pActivo">
             <option value="1">Sí</option>
             <option value="0">No</option>
           </select>
         </div>
+
+        <div>
+          <label>OverlayUrl (opcional, si usas PNG overlay)</label>
+          <input id="pOverlayUrl" placeholder="https://..." />
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #eee;margin:16px 0;" />
+
+      <h3>Imágenes</h3>
+
+      <div class="grid2">
+        <div class="card">
+          <label><strong>Foto de frente (OBLIGATORIA)</strong></label>
+          <input id="imgFrente" type="file" accept="image/*" />
+          <img id="prevFrente" class="preview hidden" alt="Vista previa frente" />
+          <p class="hint">Tip: En celular puedes elegir cámara o galería.</p>
+        </div>
+
+        <div class="card">
+          <label><strong>Foto de espalda (opcional)</strong></label>
+          <input id="imgAtras" type="file" accept="image/*" />
+          <img id="prevAtras" class="preview hidden" alt="Vista previa atrás" />
+        </div>
+      </div>
+
+      <div class="card">
+        <label><strong>Más fotos (opcional)</strong> (ej: laterales, detalle)</label>
+        <input id="imgExtras" type="file" accept="image/*" multiple />
+        <div id="extrasPreview" class="catalog"></div>
       </div>
 
       <div class="row">
@@ -121,9 +140,7 @@
 
   </div>
 
-  <!-- ✅ Config primero -->
   <script src="js/config.js"></script>
-  <script src="js/idle.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

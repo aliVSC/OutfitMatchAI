@@ -8,6 +8,9 @@ function setMsg(t, ok=false) {
 
 const STORAGE_ADMIN_KEY = "adminKey";
 
+// ✅ ID de edición interno (ya NO se muestra en inputs)
+let editingPrendaId = null;
+
 // ------------------------
 // Helpers de UI (tabs)
 // ------------------------
@@ -35,10 +38,8 @@ function setActiveTab(activeBtnId) {
 // ------------------------
 // Auth
 // ------------------------
-function getAdminKey() {
-  return localStorage.getItem(STORAGE_ADMIN_KEY) || "";
-}
-
+function getAdminKey() { return localStorage.getItem(STORAGE_ADMIN_KEY) || ""; }
+function setAdminKey(k) { localStorage.setItem(STORAGE_ADMIN_KEY, k); }
 function logout() {
   localStorage.removeItem(STORAGE_ADMIN_KEY);
   window.location.href = "index.html";
@@ -64,13 +65,14 @@ async function adminFetch(path, opts={}) {
 }
 
 // ------------------------
-// Login (sin prompt)
+// Login (simple)
 // ------------------------
 async function ensureLogin() {
-  const key = getAdminKey();
+  let key = getAdminKey();
   if (!key) {
-    window.location.href = "admin-login.html";
-    throw new Error("No autenticado");
+    key = prompt("Ingresa tu ADMIN KEY:");
+    if (!key) throw new Error("Cancelado");
+    setAdminKey(key);
   }
 
   const r = await fetch(`${API}/api/admin/login`, {
@@ -78,13 +80,30 @@ async function ensureLogin() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key })
   });
-
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.ok) {
     localStorage.removeItem(STORAGE_ADMIN_KEY);
-    window.location.href = "admin-login.html";
     throw new Error(data.error || "ADMIN KEY inválida");
   }
+}
+
+// ========================
+// Helpers imágenes (File -> base64)
+// ========================
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result || ""));
+    fr.onerror = () => reject(new Error("No se pudo leer archivo"));
+    fr.readAsDataURL(file);
+  });
+}
+
+function showPreview(imgId, dataUrl) {
+  const img = el(imgId);
+  if (!img) return;
+  img.src = dataUrl;
+  img.classList.remove("hidden");
 }
 
 // ========================
@@ -108,38 +127,80 @@ async function loadDashboard() {
 // ========================
 function getPrendaForm() {
   return {
-    Id: el("pId").value.trim(),
     Nombre: el("pNombre").value.trim(),
     Categoria: el("pCategoria").value.trim(),
     Color: el("pColor").value.trim(),
     Precio: el("pPrecio").value === "" ? null : Number(el("pPrecio").value),
     Stock: el("pStock").value === "" ? null : Number(el("pStock").value),
-    ImagenUrl: el("pImagenUrl").value.trim(),
     OverlayUrl: el("pOverlayUrl").value.trim(),
     Activo: Number(el("pActivo").value || "1")
   };
 }
 
-function fillPrendaForm(p) {
-  el("pId").value = p.Id ?? "";
-  el("pNombre").value = p.Nombre ?? "";
-  el("pCategoria").value = p.Categoria ?? "";
-  el("pColor").value = p.Color ?? "";
-  el("pPrecio").value = p.Precio ?? "";
-  el("pStock").value = p.Stock ?? "";
-  el("pImagenUrl").value = p.ImagenUrl ?? p.imgFrente ?? "";
-  el("pOverlayUrl").value = p.OverlayUrl ?? "";
-  el("pActivo").value = p.Activo ? "1" : "0";
+function setEditHint() {
+  el("editHint").textContent = editingPrendaId
+    ? `Editando prenda ID: ${editingPrendaId}`
+    : "Creando prenda nueva";
 }
 
 function clearPrendaForm() {
-  fillPrendaForm({});
+  editingPrendaId = null;
+  setEditHint();
+
+  el("pNombre").value = "";
+  el("pCategoria").value = "";
+  el("pColor").value = "";
+  el("pPrecio").value = "";
+  el("pStock").value = "";
+  el("pOverlayUrl").value = "";
+  el("pActivo").value = "1";
+
+  el("imgFrente").value = "";
+  el("imgAtras").value = "";
+  el("imgExtras").value = "";
+
+  el("prevFrente").classList.add("hidden");
+  el("prevAtras").classList.add("hidden");
+  el("extrasPreview").innerHTML = "";
+}
+
+async function collectImagesPayload() {
+  const frenteFile = el("imgFrente").files?.[0] || null;
+  const atrasFile  = el("imgAtras").files?.[0] || null;
+  const extrasFiles = Array.from(el("imgExtras").files || []);
+
+  if (!editingPrendaId && !frenteFile) {
+    // ✅ al crear: frente obligatoria
+    throw new Error("La foto de frente es obligatoria para crear la prenda.");
+  }
+
+  // Si estás editando, la imagen puede ser opcional (solo si quieres cambiarla)
+  const images = [];
+
+  if (frenteFile) {
+    const dataUrl = await fileToDataUrl(frenteFile);
+    images.push({ Tipo: "frente", Url: dataUrl, Orden: 1, Activo: 1 });
+  }
+
+  if (atrasFile) {
+    const dataUrl = await fileToDataUrl(atrasFile);
+    images.push({ Tipo: "atras", Url: dataUrl, Orden: 1, Activo: 1 });
+  }
+
+  // extras => tipo "extra"
+  for (let i = 0; i < extrasFiles.length; i++) {
+    const dataUrl = await fileToDataUrl(extrasFiles[i]);
+    images.push({ Tipo: "extra", Url: dataUrl, Orden: i + 1, Activo: 1 });
+  }
+
+  return images;
 }
 
 async function savePrenda() {
   const f = getPrendaForm();
-  setMsg("Guardando prenda...", true);
+  setMsg("Preparando datos...", true);
 
+  // normalizar
   const payload = {
     Nombre: f.Nombre || null,
     Categoria: f.Categoria || null,
@@ -147,18 +208,23 @@ async function savePrenda() {
     Precio: f.Precio,
     Stock: f.Stock,
     Activo: f.Activo ? 1 : 0,
-    ImagenUrl: f.ImagenUrl || null,
-    OverlayUrl: f.OverlayUrl || null
+    OverlayUrl: f.OverlayUrl || null,
+    // ✅ NUEVO: imágenes que vienen desde el input file
+    Imagenes: await collectImagesPayload()
   };
 
-  if (!f.Id) {
+  setMsg("Guardando prenda...", true);
+
+  if (!editingPrendaId) {
     const r = await adminFetch("/api/admin/prendas", {
       method: "POST",
       body: JSON.stringify(payload)
     });
+    editingPrendaId = r.id;
+    setEditHint();
     setMsg(`Creada ✅ (ID: ${r.id})`, true);
   } else {
-    await adminFetch(`/api/admin/prendas/${Number(f.Id)}`, {
+    await adminFetch(`/api/admin/prendas/${editingPrendaId}`, {
       method: "PUT",
       body: JSON.stringify(payload)
     });
@@ -174,6 +240,29 @@ async function togglePrenda(id, activo) {
     body: JSON.stringify({ Activo: activo ? 1 : 0 })
   });
   await loadPrendas();
+}
+
+function fillPrendaForEdit(p) {
+  editingPrendaId = p.Id;
+  setEditHint();
+
+  el("pNombre").value = p.Nombre ?? "";
+  el("pCategoria").value = p.Categoria ?? "";
+  el("pColor").value = p.Color ?? "";
+  el("pPrecio").value = p.Precio ?? "";
+  el("pStock").value = p.Stock ?? "";
+  el("pOverlayUrl").value = p.OverlayUrl ?? "";
+  el("pActivo").value = p.Activo ? "1" : "0";
+
+  // previews desde DB (si existen)
+  if (p.imgFrente) showPreview("prevFrente", p.imgFrente);
+  if (p.imgAtras) showPreview("prevAtras", p.imgAtras);
+
+  // limpiar inputs para que si no eliges archivo, no reemplaza
+  el("imgFrente").value = "";
+  el("imgAtras").value = "";
+  el("imgExtras").value = "";
+  el("extrasPreview").innerHTML = "";
 }
 
 async function loadPrendas() {
@@ -198,15 +287,16 @@ async function loadPrendas() {
     div.innerHTML = `
       ${img ? `<img class="pimg" src="${img}" alt="${p.Nombre || ""}">` : `<div class="pimg placeholder">Sin imagen</div>`}
       <h3>${p.Nombre || "(sin nombre)"}</h3>
-      <p class="meta">ID: ${p.Id} · ${p.Categoria || "-"} · Stock: ${p.Stock ?? "-"}</p>
+      <p class="meta">${p.Categoria || "-"} · Stock: ${p.Stock ?? "-"}</p>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)} · ${p.Activo ? "Activa ✅" : "Inactiva ❌"}</p>
+
       <div class="row">
         <button class="secondary btnEdit">Editar</button>
         <button class="secondary btnToggle">${p.Activo ? "Desactivar" : "Activar"}</button>
       </div>
     `;
 
-    div.querySelector(".btnEdit").onclick = () => fillPrendaForm(p);
+    div.querySelector(".btnEdit").onclick = () => fillPrendaForEdit(p);
     div.querySelector(".btnToggle").onclick = () => togglePrenda(p.Id, !p.Activo);
 
     cont.appendChild(div);
@@ -214,6 +304,36 @@ async function loadPrendas() {
 
   setMsg("", true);
 }
+
+// previews en vivo al seleccionar archivo
+el("imgFrente")?.addEventListener("change", async () => {
+  const f = el("imgFrente").files?.[0];
+  if (!f) return;
+  showPreview("prevFrente", await fileToDataUrl(f));
+});
+
+el("imgAtras")?.addEventListener("change", async () => {
+  const f = el("imgAtras").files?.[0];
+  if (!f) return;
+  showPreview("prevAtras", await fileToDataUrl(f));
+});
+
+el("imgExtras")?.addEventListener("change", async () => {
+  const files = Array.from(el("imgExtras").files || []);
+  const cont = el("extrasPreview");
+  cont.innerHTML = "";
+  for (const file of files) {
+    const dataUrl = await fileToDataUrl(file);
+    const card = document.createElement("div");
+    card.className = "cardProduct";
+    card.innerHTML = `
+      <img class="pimg" src="${dataUrl}" alt="extra" />
+      <h3>Extra</h3>
+      <p class="meta">${file.name}</p>
+    `;
+    cont.appendChild(card);
+  }
+});
 
 // ========================
 // CLIENTES
@@ -268,7 +388,9 @@ async function loadClientes() {
 async function init() {
   try {
     await ensureLogin();
+    setEditHint();
 
+    // tabs
     el("tabDashboard").onclick = async () => {
       setActiveTab("tabDashboard");
       showView("viewDashboard");
@@ -289,17 +411,21 @@ async function init() {
 
     el("btnLogout").onclick = logout;
 
+    // prendas actions
     el("btnGuardarPrenda").onclick = () => savePrenda().catch(e => setMsg("Error: " + e.message));
     el("btnLimpiarPrenda").onclick = clearPrendaForm;
     el("btnRefrescarPrendas").onclick = () => loadPrendas().catch(e => setMsg("Error: " + e.message));
     el("btnRefrescarClientes").onclick = () => loadClientes().catch(e => setMsg("Error: " + e.message));
 
+    // arranque: dashboard
     setActiveTab("tabDashboard");
     showView("viewDashboard");
     await loadDashboard();
 
   } catch (e) {
     setMsg("Error: " + (e.message || e));
+    alert("No se pudo entrar al Admin: " + (e.message || e));
+    logout();
   }
 }
 

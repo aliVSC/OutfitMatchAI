@@ -14,15 +14,12 @@ function requireAdmin(req, res, next) {
 
 // ===============================
 // POST /api/admin/login
-// body: { key: "..." }
 // ===============================
 router.post("/login", async (req, res) => {
   try {
     const { key } = req.body || {};
     if (!key) return res.status(400).json({ error: "Falta key" });
-    if (key !== process.env.ADMIN_KEY) {
-      return res.status(401).json({ error: "Clave incorrecta" });
-    }
+    if (key !== process.env.ADMIN_KEY) return res.status(401).json({ error: "Clave incorrecta" });
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: "Error login", detail: String(e.message || e) });
@@ -30,7 +27,7 @@ router.post("/login", async (req, res) => {
 });
 
 // ======================================================
-// GET /api/admin/prendas  (todas: activas e inactivas)
+// GET /api/admin/prendas
 // ======================================================
 router.get("/prendas", requireAdmin, async (req, res) => {
   try {
@@ -50,19 +47,52 @@ router.get("/prendas", requireAdmin, async (req, res) => {
   }
 });
 
+// Helper: insertar imágenes (frente/atras/extra)
+async function insertImages(pool, prendaId, imagenes) {
+  if (!Array.isArray(imagenes) || imagenes.length === 0) return;
+
+  for (const im of imagenes) {
+    const Tipo = (im.Tipo || "").toLowerCase();
+    const Url = im.Url || "";
+    const Orden = Number(im.Orden || 1);
+    const Activo = im.Activo ? 1 : 1;
+
+    if (!Tipo || !Url) continue;
+
+    await pool.request()
+      .input("PrendaId", sql.Int, prendaId)
+      .input("Tipo", sql.NVarChar(20), Tipo)
+      .input("Url", sql.NVarChar(sql.MAX), Url) // ✅ NVARCHAR(MAX)
+      .input("Orden", sql.Int, Orden)
+      .input("Activo", sql.Bit, Activo)
+      .query(`
+        INSERT INTO PrendaImagenes (PrendaId, Tipo, Url, Orden, Activo)
+        VALUES (@PrendaId, @Tipo, @Url, @Orden, @Activo)
+      `);
+  }
+}
+
 // ======================================================
-// POST /api/admin/prendas  (crear prenda)
-// body: { Nombre, Categoria, Color, Precio, Stock, Activo, ImagenUrl, OverlayUrl }
+// POST /api/admin/prendas
+// body: { Nombre, Categoria, Color, Precio, Stock, Activo, OverlayUrl, Imagenes:[] }
 // ======================================================
 router.post("/prendas", requireAdmin, async (req, res) => {
   try {
     const {
       Nombre, Categoria, Color,
       Precio, Stock, Activo,
-      ImagenUrl, OverlayUrl
+      OverlayUrl,
+      Imagenes
     } = req.body || {};
 
+    // Frente obligatoria para crear
+    const tieneFrente = Array.isArray(Imagenes) && Imagenes.some(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url);
+    if (!tieneFrente) return res.status(400).json({ error: "Falta imagen de frente" });
+
     const pool = await getPool();
+
+    // Tomar frente para guardar también en Prendas.ImagenUrl (compatibilidad)
+    const frente = Imagenes.find(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url)?.Url || null;
 
     const r = await pool.request()
       .input("Nombre", sql.NVarChar(120), Nombre || null)
@@ -71,22 +101,26 @@ router.post("/prendas", requireAdmin, async (req, res) => {
       .input("Precio", sql.Decimal(10,2), (Precio ?? null))
       .input("Stock", sql.Int, (Stock ?? null))
       .input("Activo", sql.Bit, (Activo ?? 1))
-      .input("ImagenUrl", sql.NVarChar(300), ImagenUrl || null)
-      .input("OverlayUrl", sql.NVarChar(300), OverlayUrl || null)
+      .input("ImagenUrl", sql.NVarChar(sql.MAX), frente) // ✅ guarda base64 también aquí
+      .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null)
       .query(`
         INSERT INTO Prendas (Nombre, Categoria, Color, Precio, Stock, Activo, ImagenUrl, OverlayUrl)
         OUTPUT INSERTED.Id
         VALUES (@Nombre, @Categoria, @Color, @Precio, @Stock, @Activo, @ImagenUrl, @OverlayUrl)
       `);
 
-    res.json({ ok: true, id: r.recordset?.[0]?.Id });
+    const newId = r.recordset?.[0]?.Id;
+    await insertImages(pool, newId, Imagenes);
+
+    res.json({ ok: true, id: newId });
   } catch (e) {
     res.status(500).json({ error: "Error creando prenda", detail: String(e.message || e) });
   }
 });
 
 // ======================================================
-// PUT /api/admin/prendas/:id  (editar prenda)
+// PUT /api/admin/prendas/:id
+// body: { ..., Imagenes:[] }  (si envías imágenes nuevas, reemplaza las anteriores)
 // ======================================================
 router.put("/prendas/:id", requireAdmin, async (req, res) => {
   try {
@@ -96,10 +130,16 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
     const {
       Nombre, Categoria, Color,
       Precio, Stock, Activo,
-      ImagenUrl, OverlayUrl
+      OverlayUrl,
+      Imagenes
     } = req.body || {};
 
     const pool = await getPool();
+
+    // Si viene una imagen de frente en Imagenes, actualizamos ImagenUrl con ella
+    const frenteNueva = Array.isArray(Imagenes)
+      ? (Imagenes.find(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url)?.Url || null)
+      : null;
 
     await pool.request()
       .input("Id", sql.Int, id)
@@ -109,8 +149,8 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
       .input("Precio", sql.Decimal(10,2), (Precio ?? null))
       .input("Stock", sql.Int, (Stock ?? null))
       .input("Activo", sql.Bit, (Activo ?? 1))
-      .input("ImagenUrl", sql.NVarChar(300), ImagenUrl || null)
-      .input("OverlayUrl", sql.NVarChar(300), OverlayUrl || null)
+      .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null)
+      .input("ImagenUrl", sql.NVarChar(sql.MAX), frenteNueva) // puede ser null si no cambió
       .query(`
         UPDATE Prendas
         SET
@@ -120,10 +160,19 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
           Precio=@Precio,
           Stock=@Stock,
           Activo=@Activo,
-          ImagenUrl=@ImagenUrl,
-          OverlayUrl=@OverlayUrl
+          OverlayUrl=@OverlayUrl,
+          ImagenUrl = COALESCE(@ImagenUrl, ImagenUrl)
         WHERE Id=@Id
       `);
+
+    // ✅ Si envías Imagenes, reemplazamos imágenes en PrendaImagenes
+    if (Array.isArray(Imagenes) && Imagenes.length > 0) {
+      await pool.request()
+        .input("Id", sql.Int, id)
+        .query(`DELETE FROM PrendaImagenes WHERE PrendaId=@Id`);
+
+      await insertImages(pool, id, Imagenes);
+    }
 
     res.json({ ok: true });
   } catch (e) {
@@ -132,8 +181,7 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
 });
 
 // ======================================================
-// PATCH /api/admin/prendas/:id/toggle  (activar/desactivar)
-// body: { Activo: 0|1 }
+// PATCH /api/admin/prendas/:id/toggle
 // ======================================================
 router.patch("/prendas/:id/toggle", requireAdmin, async (req, res) => {
   try {
@@ -154,7 +202,7 @@ router.patch("/prendas/:id/toggle", requireAdmin, async (req, res) => {
 });
 
 // ======================================================
-// GET /api/admin/clientes  (lista)
+// GET /api/admin/clientes
 // ======================================================
 router.get("/clientes", requireAdmin, async (req, res) => {
   try {
@@ -174,14 +222,13 @@ router.get("/clientes", requireAdmin, async (req, res) => {
 });
 
 // ======================================================
-// GET /api/admin/stats/today  (dashboard rápido)
+// GET /api/admin/stats/today
 // ======================================================
 router.get("/stats/today", requireAdmin, async (req, res) => {
   try {
     const pool = await getPool();
     const r = await pool.request().query(`
       DECLARE @hoy DATE = CONVERT(date, SYSDATETIME());
-
       SELECT
         (SELECT COUNT(*) FROM Clientes) AS totalClientes,
         (SELECT COUNT(*) FROM Prendas WHERE Activo=1) AS prendasActivas,
@@ -195,3 +242,4 @@ router.get("/stats/today", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
