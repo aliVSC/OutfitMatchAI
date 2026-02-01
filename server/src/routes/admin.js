@@ -19,10 +19,13 @@ router.post("/login", async (req, res) => {
   try {
     const { key } = req.body || {};
     if (!key) return res.status(400).json({ error: "Falta key" });
-    if (key !== process.env.ADMIN_KEY) return res.status(401).json({ error: "Clave incorrecta" });
+    if (key !== process.env.ADMIN_KEY)
+      return res.status(401).json({ error: "Clave incorrecta" });
     return res.json({ ok: true });
   } catch (e) {
-    return res.status(500).json({ error: "Error login", detail: String(e.message || e) });
+    return res
+      .status(500)
+      .json({ error: "Error login", detail: String(e.message || e) });
   }
 });
 
@@ -38,13 +41,13 @@ async function insertImages(pool, prendaId, imagenes) {
 
     if (!Tipo || !Url) continue;
 
-    await pool.request()
+    await pool
+      .request()
       .input("PrendaId", sql.Int, prendaId)
       .input("Tipo", sql.NVarChar(20), Tipo)
       .input("Url", sql.NVarChar(sql.MAX), Url)
       .input("Orden", sql.Int, Orden)
-      .input("Activo", sql.Bit, Activo)
-      .query(`
+      .input("Activo", sql.Bit, Activo).query(`
         INSERT INTO PrendaImagenes (PrendaId, Tipo, Url, Orden, Activo)
         VALUES (@PrendaId, @Tipo, @Url, @Orden, @Activo)
       `);
@@ -69,7 +72,12 @@ router.get("/prendas", requireAdmin, async (req, res) => {
     `);
     res.json({ ok: true, prendas: r.recordset });
   } catch (e) {
-    res.status(500).json({ error: "Error listando prendas", detail: String(e.message || e) });
+    res
+      .status(500)
+      .json({
+        error: "Error listando prendas",
+        detail: String(e.message || e),
+      });
   }
 });
 
@@ -80,32 +88,46 @@ router.get("/prendas", requireAdmin, async (req, res) => {
 router.post("/prendas", requireAdmin, async (req, res) => {
   try {
     const {
-      Nombre, Categoria, Color,
-      Precio, Stock, Activo,
+      Nombre,
+      Categoria,
+      Color,
+      Precio,
+      Stock,
+      Activo,
       OverlayUrl,
-      Imagenes
+      Imagenes,
     } = req.body || {};
 
-    const tieneFrente = Array.isArray(Imagenes) && Imagenes.some(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url);
-    if (!tieneFrente) return res.status(400).json({ error: "Falta imagen de frente" });
+    const tieneFrente =
+      Array.isArray(Imagenes) &&
+      Imagenes.some((x) => (x.Tipo || "").toLowerCase() === "frente" && x.Url);
+    if (!tieneFrente)
+      return res.status(400).json({ error: "Falta imagen de frente" });
 
-    const tieneOverlay = Array.isArray(Imagenes) && Imagenes.some(x => (x.Tipo || "").toLowerCase() === "overlay" && x.Url);
-    if (!tieneOverlay) return res.status(400).json({ error: "Falta overlay PNG (Tipo=overlay)" });
+    const tieneOverlay =
+      Array.isArray(Imagenes) &&
+      Imagenes.some((x) => (x.Tipo || "").toLowerCase() === "overlay" && x.Url);
+    if (!tieneOverlay)
+      return res
+        .status(400)
+        .json({ error: "Falta overlay PNG (Tipo=overlay)" });
 
     const pool = await getPool();
 
-    const frente = Imagenes.find(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url)?.Url || null;
+    const frente =
+      Imagenes.find((x) => (x.Tipo || "").toLowerCase() === "frente" && x.Url)
+        ?.Url || null;
 
-    const r = await pool.request()
+    const r = await pool
+      .request()
       .input("Nombre", sql.NVarChar(120), Nombre || null)
       .input("Categoria", sql.NVarChar(50), Categoria || null)
       .input("Color", sql.NVarChar(40), Color || null)
-      .input("Precio", sql.Decimal(10,2), (Precio ?? null))
-      .input("Stock", sql.Int, (Stock ?? null))
-      .input("Activo", sql.Bit, (Activo ?? 1))
+      .input("Precio", sql.Decimal(10, 2), Precio ?? null)
+      .input("Stock", sql.Int, Stock ?? null)
+      .input("Activo", sql.Bit, Activo ?? 1)
       .input("ImagenUrl", sql.NVarChar(sql.MAX), frente)
-      .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null)
-      .query(`
+      .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null).query(`
         INSERT INTO Prendas (Nombre, Categoria, Color, Precio, Stock, Activo, ImagenUrl, OverlayUrl)
         OUTPUT INSERTED.Id
         VALUES (@Nombre, @Categoria, @Color, @Precio, @Stock, @Activo, @ImagenUrl, @OverlayUrl)
@@ -116,7 +138,9 @@ router.post("/prendas", requireAdmin, async (req, res) => {
 
     res.json({ ok: true, id: newId });
   } catch (e) {
-    res.status(500).json({ error: "Error creando prenda", detail: String(e.message || e) });
+    res
+      .status(500)
+      .json({ error: "Error creando prenda", detail: String(e.message || e) });
   }
 });
 
@@ -130,29 +154,34 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
     if (!id) return res.status(400).json({ error: "id inválido" });
 
     const {
-      Nombre, Categoria, Color,
-      Precio, Stock, Activo,
+      Nombre,
+      Categoria,
+      Color,
+      Precio,
+      Stock,
+      Activo,
       OverlayUrl,
-      Imagenes
+      Imagenes,
     } = req.body || {};
 
     const pool = await getPool();
 
     const frenteNueva = Array.isArray(Imagenes)
-      ? (Imagenes.find(x => (x.Tipo || "").toLowerCase() === "frente" && x.Url)?.Url || null)
+      ? Imagenes.find((x) => (x.Tipo || "").toLowerCase() === "frente" && x.Url)
+          ?.Url || null
       : null;
 
-    await pool.request()
+    await pool
+      .request()
       .input("Id", sql.Int, id)
       .input("Nombre", sql.NVarChar(120), Nombre || null)
       .input("Categoria", sql.NVarChar(50), Categoria || null)
       .input("Color", sql.NVarChar(40), Color || null)
-      .input("Precio", sql.Decimal(10,2), (Precio ?? null))
-      .input("Stock", sql.Int, (Stock ?? null))
-      .input("Activo", sql.Bit, (Activo ?? 1))
+      .input("Precio", sql.Decimal(10, 2), Precio ?? null)
+      .input("Stock", sql.Int, Stock ?? null)
+      .input("Activo", sql.Bit, Activo ?? 1)
       .input("OverlayUrl", sql.NVarChar(sql.MAX), OverlayUrl || null)
-      .input("ImagenUrl", sql.NVarChar(sql.MAX), frenteNueva)
-      .query(`
+      .input("ImagenUrl", sql.NVarChar(sql.MAX), frenteNueva).query(`
         UPDATE Prendas
         SET
           Nombre=@Nombre,
@@ -168,7 +197,8 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
 
     // Si envías Imagenes, reemplaza todas (frente/atras/extra/overlay)
     if (Array.isArray(Imagenes) && Imagenes.length > 0) {
-      await pool.request()
+      await pool
+        .request()
         .input("Id", sql.Int, id)
         .query(`DELETE FROM PrendaImagenes WHERE PrendaId=@Id`);
 
@@ -177,7 +207,9 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: "Error editando prenda", detail: String(e.message || e) });
+    res
+      .status(500)
+      .json({ error: "Error editando prenda", detail: String(e.message || e) });
   }
 });
 
@@ -191,14 +223,20 @@ router.patch("/prendas/:id/toggle", requireAdmin, async (req, res) => {
     if (!id) return res.status(400).json({ error: "id inválido" });
 
     const pool = await getPool();
-    await pool.request()
+    await pool
+      .request()
       .input("Id", sql.Int, id)
-      .input("Activo", sql.Bit, (Activo ? 1 : 0))
+      .input("Activo", sql.Bit, Activo ? 1 : 0)
       .query(`UPDATE Prendas SET Activo=@Activo WHERE Id=@Id`);
 
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: "Error cambiando estado", detail: String(e.message || e) });
+    res
+      .status(500)
+      .json({
+        error: "Error cambiando estado",
+        detail: String(e.message || e),
+      });
   }
 });
 
@@ -218,7 +256,72 @@ router.get("/clientes", requireAdmin, async (req, res) => {
     `);
     res.json({ ok: true, clientes: r.recordset });
   } catch (e) {
-    res.status(500).json({ error: "Error listando clientes", detail: String(e.message || e) });
+    res
+      .status(500)
+      .json({
+        error: "Error listando clientes",
+        detail: String(e.message || e),
+      });
+  }
+});
+
+// ======================================================
+// TIPOS DE CUERPO (solo para ingresar los 5)
+// ======================================================
+router.get("/tipos-cuerpo", requireAdmin, async (req, res) => {
+  try {
+    const pool = await getPool();
+    const r = await pool.request().query(`
+      SELECT Codigo, Nombre, ImagenUrl
+      FROM TiposCuerpo
+      ORDER BY Nombre ASC
+    `);
+    res.json({ ok: true, tipos: r.recordset });
+  } catch (e) {
+    res
+      .status(500)
+      .json({
+        error: "Error listando tipos cuerpo",
+        detail: String(e.message || e),
+      });
+  }
+});
+
+router.post("/tipos-cuerpo", requireAdmin, async (req, res) => {
+  try {
+    const { Codigo, Nombre, ImagenUrl } = req.body || {};
+    if (!Codigo) return res.status(400).json({ error: "Falta Codigo" });
+    if (!Nombre) return res.status(400).json({ error: "Falta Nombre" });
+    if (!ImagenUrl) return res.status(400).json({ error: "Falta ImagenUrl" });
+
+    const pool = await getPool();
+
+    await pool
+      .request()
+      .input("Codigo", sql.NVarChar(40), Codigo)
+      .input("Nombre", sql.NVarChar(80), Nombre)
+      .input("ImagenUrl", sql.NVarChar(sql.MAX), ImagenUrl).query(`
+        IF EXISTS (SELECT 1 FROM TiposCuerpo WHERE Codigo=@Codigo)
+        BEGIN
+          UPDATE TiposCuerpo
+          SET Nombre=@Nombre, ImagenUrl=@ImagenUrl
+          WHERE Codigo=@Codigo
+        END
+        ELSE
+        BEGIN
+          INSERT INTO TiposCuerpo (Codigo, Nombre, ImagenUrl)
+          VALUES (@Codigo, @Nombre, @ImagenUrl)
+        END
+      `);
+
+    res.json({ ok: true });
+  } catch (e) {
+    res
+      .status(500)
+      .json({
+        error: "Error guardando tipo cuerpo",
+        detail: String(e.message || e),
+      });
   }
 });
 
@@ -238,7 +341,9 @@ router.get("/stats/today", requireAdmin, async (req, res) => {
     `);
     res.json({ ok: true, stats: r.recordset[0] });
   } catch (e) {
-    res.status(500).json({ error: "Error stats", detail: String(e.message || e) });
+    res
+      .status(500)
+      .json({ error: "Error stats", detail: String(e.message || e) });
   }
 });
 

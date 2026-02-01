@@ -70,7 +70,7 @@ async function adminFetch(path, opts = {}) {
   const data = await r.json().catch(() => ({}));
   if (!r.ok)
     throw new Error(
-      (data.error || "Error") + (data.detail ? " | " + data.detail : "")
+      (data.error || "Error") + (data.detail ? " | " + data.detail : ""),
     );
   return data;
 }
@@ -82,6 +82,7 @@ async function ensureLogin() {
   let key = getAdminKey();
   if (!key) {
     key = prompt("admin12345");
+    if (!key) throw new Error("Cancelado");
     setAdminKey(key);
   }
 
@@ -186,7 +187,7 @@ function hasAnySelectedFiles() {
   const atras = el("imgAtras").files?.length || 0;
   const overlay = el("imgOverlay").files?.length || 0;
   const extras = el("imgExtras").files?.length || 0;
-  return (frente + atras + overlay + extras) > 0;
+  return frente + atras + overlay + extras > 0;
 }
 
 async function collectImagesPayloadStrict() {
@@ -195,7 +196,6 @@ async function collectImagesPayloadStrict() {
   const overlayFile = el("imgOverlay").files?.[0] || null;
   const extrasFiles = Array.from(el("imgExtras").files || []);
 
-  // Al CREAR: frente + overlay obligatorios
   if (!editingPrendaId && !frenteFile) {
     throw new Error("La foto de frente es obligatoria para crear la prenda.");
   }
@@ -232,7 +232,6 @@ async function savePrenda() {
   const f = getPrendaForm();
   setMsg("Preparando datos...", true);
 
-  // payload base
   const payload = {
     Nombre: f.Nombre || null,
     Categoria: f.Categoria || null,
@@ -242,17 +241,12 @@ async function savePrenda() {
     Activo: f.Activo ? 1 : 0,
   };
 
-  // ✅ REGLA CLAVE:
-  // - Crear: siempre mandamos Imagenes (obligatorio)
-  // - Editar: SOLO mandamos Imagenes si seleccionaste archivos nuevos
   if (!editingPrendaId) {
     payload.Imagenes = await collectImagesPayloadStrict();
   } else {
     if (hasAnySelectedFiles()) {
       payload.Imagenes = await collectImagesPayloadStrict();
     }
-    // si NO hay archivos seleccionados, NO incluimos "Imagenes" en el body
-    // => el backend NO borra nada y conserva imágenes actuales
   }
 
   setMsg("Guardando prenda...", true);
@@ -263,19 +257,14 @@ async function savePrenda() {
       body: JSON.stringify(payload),
     });
     setMsg(`Creada ✅ (ID: ${r.id})`, true);
-
-    // ✅ Limpia automático y cierra (opcional)
     clearPrendaForm();
     closePrendaForm();
-
   } else {
     await adminFetch(`/api/admin/prendas/${editingPrendaId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
     setMsg("Actualizada ✅", true);
-
-    // ✅ Limpia automático y vuelve a modo “nuevo”
     clearPrendaForm();
     closePrendaForm();
   }
@@ -292,7 +281,6 @@ async function togglePrenda(id, activo) {
 }
 
 function fillPrendaForEdit(p) {
-  // abre form y prepara edición
   openPrendaForm();
 
   editingPrendaId = p.Id;
@@ -305,7 +293,6 @@ function fillPrendaForEdit(p) {
   el("pStock").value = p.Stock ?? "";
   el("pActivo").value = p.Activo ? "1" : "0";
 
-  // previews desde DB
   if (p.imgFrente) showPreview("prevFrente", p.imgFrente);
   else hidePreview("prevFrente");
 
@@ -315,15 +302,16 @@ function fillPrendaForEdit(p) {
   if (p.imgOverlay) showPreview("prevOverlay", p.imgOverlay);
   else hidePreview("prevOverlay");
 
-  // Importante: por seguridad el navegador NO permite "precargar" archivos en inputs file.
-  // Por eso, en edición dejamos los inputs vacíos:
   el("imgFrente").value = "";
   el("imgAtras").value = "";
   el("imgExtras").value = "";
   el("imgOverlay").value = "";
   el("extrasPreview").innerHTML = "";
 
-  setMsg("Edita campos y, si deseas cambiar imágenes, selecciona nuevos archivos. Si no, se conservan.", true);
+  setMsg(
+    "Edita campos y, si deseas cambiar imágenes, selecciona nuevos archivos. Si no, se conservan.",
+    true,
+  );
 }
 
 async function loadPrendas() {
@@ -354,8 +342,8 @@ async function loadPrendas() {
       <h3>${p.Nombre || "(sin nombre)"}</h3>
       <p class="meta">${p.Categoria || "-"} · Stock: ${p.Stock ?? "-"}</p>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)} · ${
-      p.Activo ? "Activa ✅" : "Inactiva ❌"
-    }</p>
+        p.Activo ? "Activa ✅" : "Inactiva ❌"
+      }</p>
       <p class="meta">${p.imgOverlay ? "Overlay ✅" : "Overlay ❌"}</p>
 
       <div class="row">
@@ -365,7 +353,8 @@ async function loadPrendas() {
     `;
 
     div.querySelector(".btnEdit").onclick = () => fillPrendaForEdit(p);
-    div.querySelector(".btnToggle").onclick = () => togglePrenda(p.Id, !p.Activo);
+    div.querySelector(".btnToggle").onclick = () =>
+      togglePrenda(p.Id, !p.Activo);
 
     cont.appendChild(div);
   });
@@ -447,13 +436,13 @@ async function loadClientes() {
               (c) => `
             <tr>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.Id}</td>
-              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${(c.Nombres||"")+" "+(c.Apellidos||"")}</td>
+              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${(c.Nombres || "") + " " + (c.Apellidos || "")}</td>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.Email || "-"}</td>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleString() : "-"}</td>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.Fotos ?? 0}</td>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.TryOns ?? 0}</td>
             </tr>
-          `
+          `,
             )
             .join("")}
         </tbody>
@@ -483,7 +472,6 @@ async function init() {
       setActiveTab("tabPrendas");
       showView("viewPrendas");
       await loadPrendas();
-      // por defecto, formulario cerrado (más limpio)
       closePrendaForm();
       editingPrendaId = null;
       setEditHint();
@@ -524,6 +512,15 @@ async function init() {
     el("btnRefrescarClientes").onclick = () =>
       loadClientes().catch((e) => setMsg("Error: " + e.message));
 
+    // ✅✅✅ ESTO ES LO QUE TE FALTABA ✅✅✅
+    el("btnGuardarTipoCuerpo")?.addEventListener("click", () => {
+      saveTipoCuerpo().catch((e) => setMsg("Error: " + e.message));
+    });
+
+    el("btnCargarTiposCuerpo")?.addEventListener("click", () => {
+      loadTiposCuerpo().catch((e) => setMsg("Error: " + e.message));
+    });
+
     // Arranque
     setActiveTab("tabDashboard");
     showView("viewDashboard");
@@ -534,5 +531,76 @@ async function init() {
     logout();
   }
 }
+
+// ========================
+// TIPOS DE CUERPO (CRUD simple)
+// ========================
+async function saveTipoCuerpo() {
+  const Codigo = (el("tcCodigo").value || "").trim().toLowerCase();
+  const Nombre = (el("tcNombre").value || "").trim();
+  const file = el("tcImagen").files?.[0] || null;
+
+  if (!Codigo) throw new Error("Falta Código (ej: pera)");
+  if (!Nombre) throw new Error("Falta Nombre (ej: Pera)");
+  if (!file) throw new Error("Falta subir la imagen del tipo de cuerpo");
+
+  const base64 = await fileToDataUrl(file);
+
+  setMsg("Guardando tipo de cuerpo...", true);
+
+  await adminFetch("/api/admin/tipos-cuerpo", {
+    method: "POST",
+    body: JSON.stringify({ Codigo, Nombre, ImagenUrl: base64 }),
+  });
+
+  setMsg("Tipo de cuerpo guardado ✅", true);
+
+  el("tcCodigo").value = "";
+  el("tcNombre").value = "";
+  el("tcImagen").value = "";
+  el("tcPreview").classList.add("hidden");
+
+  await loadTiposCuerpo();
+}
+
+async function loadTiposCuerpo() {
+  setMsg("Cargando tipos de cuerpo...", true);
+
+  const data = await adminFetch("/api/admin/tipos-cuerpo");
+  const tipos = data.tipos || [];
+
+  const cont = el("tiposCuerpoList");
+  cont.innerHTML = "";
+
+  if (!tipos.length) {
+    cont.innerHTML = `<div class="card">No hay tipos de cuerpo guardados</div>`;
+    setMsg("", true);
+    return;
+  }
+
+  tipos.forEach((t) => {
+    const div = document.createElement("div");
+    div.className = "cardProduct";
+    div.innerHTML = `
+      ${
+        t.ImagenUrl
+          ? `<img class="pimg" src="${t.ImagenUrl}" alt="${t.Nombre}">`
+          : `<div class="pimg placeholder">Sin imagen</div>`
+      }
+      <h3>${t.Nombre || "-"}</h3>
+      <p class="meta">Código: ${t.Codigo}</p>
+    `;
+    cont.appendChild(div);
+  });
+
+  setMsg("", true);
+}
+
+// preview en vivo
+el("tcImagen")?.addEventListener("change", async () => {
+  const f = el("tcImagen").files?.[0];
+  if (!f) return;
+  showPreview("tcPreview", await fileToDataUrl(f));
+});
 
 init();

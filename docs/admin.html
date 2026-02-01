@@ -48,20 +48,34 @@
 
       <!-- PRENDAS -->
       <div id="viewPrendas" class="card hidden">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <h2 style="margin:0;">Prendas</h2>
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+          "
+        >
+          <h2 style="margin: 0">Prendas</h2>
 
-          <div class="row" style="margin:0;">
-            <button id="btnNuevoProducto" class="primary">+ Nuevo producto</button>
-            <button id="btnRefrescarPrendas" class="secondary">Refrescar lista</button>
+          <div class="row" style="margin: 0">
+            <button id="btnNuevoProducto" class="primary">
+              + Nuevo producto
+            </button>
+            <button id="btnRefrescarPrendas" class="secondary">
+              Refrescar lista
+            </button>
           </div>
         </div>
 
-        <p class="hint" id="editHint" style="margin-top:10px;">Creando prenda nueva</p>
+        <p class="hint" id="editHint" style="margin-top: 10px">
+          Creando prenda nueva
+        </p>
 
         <!-- FORMULARIO (COLAPSABLE) -->
-        <div id="prendaFormWrap" class="card hidden" style="margin-top:12px;">
-          <h3 style="margin-top:0;">Datos del producto</h3>
+        <div id="prendaFormWrap" class="card hidden" style="margin-top: 12px">
+          <h3 style="margin-top: 0">Datos del producto</h3>
 
           <div class="grid">
             <div>
@@ -81,7 +95,12 @@
 
             <div>
               <label>Precio</label>
-              <input id="pPrecio" type="number" step="0.01" placeholder="19.99" />
+              <input
+                id="pPrecio"
+                type="number"
+                step="0.01"
+                placeholder="19.99"
+              />
             </div>
 
             <div>
@@ -98,7 +117,9 @@
             </div>
           </div>
 
-          <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0" />
+          <hr
+            style="border: none; border-top: 1px solid #eee; margin: 16px 0"
+          />
 
           <h3>Imágenes</h3>
 
@@ -106,13 +127,21 @@
             <div class="card">
               <label><strong>Foto de frente (OBLIGATORIA)</strong></label>
               <input id="imgFrente" type="file" accept="image/*" />
-              <img id="prevFrente" class="preview hidden" alt="Vista previa frente" />
+              <img
+                id="prevFrente"
+                class="preview hidden"
+                alt="Vista previa frente"
+              />
             </div>
 
             <div class="card">
               <label><strong>Foto de espalda (opcional)</strong></label>
               <input id="imgAtras" type="file" accept="image/*" />
-              <img id="prevAtras" class="preview hidden" alt="Vista previa atrás" />
+              <img
+                id="prevAtras"
+                class="preview hidden"
+                alt="Vista previa atrás"
+              />
             </div>
           </div>
 
@@ -123,13 +152,22 @@
           </div>
 
           <div class="card">
-            <label><strong>OBLIGATORIO para TryOn IA</strong> (PNG con transparencia)</label>
+            <label
+              ><strong>OBLIGATORIO para TryOn IA</strong> (PNG con
+              transparencia)</label
+            >
             <input id="imgOverlay" type="file" accept="image/png" />
-            <img id="prevOverlay" class="preview hidden" alt="Vista previa overlay" />
+            <img
+              id="prevOverlay"
+              class="preview hidden"
+              alt="Vista previa overlay"
+            />
           </div>
 
           <div class="row">
-            <button id="btnGuardarPrenda" class="primary">Guardar prenda</button>
+            <button id="btnGuardarPrenda" class="primary">
+              Guardar prenda
+            </button>
             <button id="btnLimpiarPrenda" class="secondary">Limpiar</button>
             <button id="btnCerrarFormulario" class="secondary">Cerrar</button>
           </div>
@@ -149,6 +187,43 @@
         <div id="clientesList" class="card"></div>
       </div>
     </div>
+
+    <!-- Solo es para ingresar los tipos de cuerpo, despues podemos eliminar esta parte-->
+    <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0" />
+
+    <h2>Tipos de cuerpo (5)</h2>
+    <p class="subtitle">
+      Sube la imagen del tipo de cuerpo. Se guardará en la base como Base64.
+    </p>
+
+    <div class="grid2">
+      <div class="card">
+        <label><strong>Código</strong> (ej: pera, reloj_arena)</label>
+        <input id="tcCodigo" placeholder="pera" />
+      </div>
+
+      <div class="card">
+        <label><strong>Nombre</strong> (ej: Pera)</label>
+        <input id="tcNombre" placeholder="Pera" />
+      </div>
+    </div>
+
+    <div class="card">
+      <label><strong>Imagen (PNG/JPG)</strong></label>
+      <input id="tcImagen" type="file" accept="image/*" />
+      <img id="tcPreview" class="preview hidden" alt="Preview tipo cuerpo" />
+    </div>
+
+    <div class="row">
+      <button id="btnGuardarTipoCuerpo" class="primary">
+        Guardar tipo de cuerpo
+      </button>
+      <button id="btnCargarTiposCuerpo" class="secondary">
+        Ver tipos guardados
+      </button>
+    </div>
+
+    <div id="tiposCuerpoList" class="catalog"></div>
 
     <script src="js/config.js"></script>
     <script src="js/admin.js"></script>
