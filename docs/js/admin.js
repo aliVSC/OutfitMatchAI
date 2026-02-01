@@ -81,8 +81,7 @@ async function adminFetch(path, opts = {}) {
 async function ensureLogin() {
   let key = getAdminKey();
   if (!key) {
-    key = prompt("Ingresa tu ADMIN KEY:");
-    if (!key) throw new Error("Cancelado");
+    key = prompt("admin12345");
     setAdminKey(key);
   }
 

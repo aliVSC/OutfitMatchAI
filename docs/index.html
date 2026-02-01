@@ -4,9 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>OutfitMatch</title>
-    <link rel="stylesheet" href="styles.css" />
+
+    <!-- ✅ MISMA RUTA QUE TUS OTRAS PANTALLAS -->
+    <link rel="stylesheet" href="css/styles.css" />
   </head>
-  <body>
+
+  <!-- ✅ class="home" para aplicar estilos SOLO al index -->
+  <body class="home">
     <div class="container">
       <div class="card hero">
         <div class="heroTop">
@@ -14,29 +18,27 @@
             class="logo"
             src="assets/img/logo.png"
             alt="OutfitMatch"
-            onerror="this.style.display = 'none'"
+            onerror="this.style.display='none'"
           />
           <div>
-            <h1 style="margin: 0">OutfitMatch</h1>
-            <p class="subtitle" style="margin-top: 6px">
-              Asesoría inteligente, a un clic de distancia.
-            </p>
+            <h1>OutfitMatch</h1>
+            <p class="subtitle">Asesoría inteligente, a un clic de distancia.</p>
           </div>
         </div>
 
-        <div class="row" style="margin-top: 14px">
+        <div class="row">
           <button id="btnStart" class="primary">Iniciar encuesta</button>
           <button id="btnAdmin" class="secondary">Administrador</button>
         </div>
       </div>
     </div>
 
-    <!-- Idle timer en la home también está ok (no redirige si ya estás aquí) -->
     <script src="js/idle.js"></script>
 
     <script>
       document.getElementById("btnStart").onclick = () =>
         (window.location.href = "survey.html");
+
       document.getElementById("btnAdmin").onclick = () =>
         (window.location.href = "admin-login.html");
     </script>

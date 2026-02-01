@@ -384,22 +384,6 @@ video{
   margin:0 auto;
 }
 
-/* =========================
-   HOME (index) - centrado + más bonito
-   ========================= */
-
-/* Solo afecta cuando existe .hero (tu index) */
-body:has(.hero){
-  display: grid;
-  place-items: center;
-}
-
-/* En home el container ya no “se pega arriba” */
-body:has(.hero) .container{
-  width: 100%;
-  padding: 28px 24px;
-}
-
 /* Tarjeta hero más pro */
 .hero{
   max-width: 720px;
@@ -443,5 +427,64 @@ body:has(.hero) .container{
   .hero .row button{
     width: 100%;
     min-width: 0;
+  }
+}
+
+/* =========================
+   HOME (INDEX) - ROBUSTO EN TODO
+   ========================= */
+
+/* ✅ Estilo SOLO para index.html */
+body.home{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+
+/* ✅ En home el contenedor ocupa bien */
+body.home .container{
+  width: 100%;
+  max-width: 980px;
+  padding: 28px 18px;
+}
+
+/* ✅ Tarjeta hero consistente con las demás pantallas */
+body.home .hero{
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ✅ Header alineado y sin logo gigante */
+body.home .heroTop{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ✅ El logo jamás se hará enorme */
+body.home .logo{
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.06);
+  padding: 6px;
+  flex: 0 0 auto;
+}
+
+/* ✅ Botones bien (y en móvil 100% ancho) */
+body.home .row{
+  margin-top: 16px;
+}
+
+@media (max-width: 520px){
+  body.home .row{
+    flex-direction: column;
+  }
+  body.home .row button{
+    width: 100%;
   }
 }
