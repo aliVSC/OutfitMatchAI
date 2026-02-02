@@ -2,8 +2,10 @@ const API = window.API_BASE || "http://localhost:8013";
 const el = (id) => document.getElementById(id);
 
 function setMsg(t, ok = false) {
-  el("msg").textContent = t;
-  el("msg").className = ok ? "msg ok" : "msg";
+  const m = el("msg");
+  if (!m) return;
+  m.textContent = t;
+  m.className = ok ? "msg ok" : "msg";
 }
 
 const STORAGE_ADMIN_KEY = "adminKey";
@@ -18,7 +20,7 @@ function showView(viewId) {
     if (!v) return;
     v.classList.add("hidden");
   });
-  el(viewId).classList.remove("hidden");
+  el(viewId)?.classList.remove("hidden");
 }
 
 function setActiveTab(activeBtnId) {
@@ -29,6 +31,7 @@ function setActiveTab(activeBtnId) {
     b.classList.add("secondary");
   });
   const a = el(activeBtnId);
+  if (!a) return;
   a.classList.remove("secondary");
   a.classList.add("primary");
 }
@@ -68,10 +71,11 @@ async function adminFetch(path, opts = {}) {
 
   const r = await fetch(`${API}${path}`, { ...opts, headers });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok)
+  if (!r.ok) {
     throw new Error(
-      (data.error || "Error") + (data.detail ? " | " + data.detail : ""),
+      (data.error || "Error") + (data.detail ? " | " + data.detail : "")
     );
+  }
   return data;
 }
 
@@ -125,6 +129,63 @@ function hidePreview(imgId) {
 }
 
 // =========================
+// TAGS (ocasión)
+// =========================
+function getSelectedTags() {
+  // checkboxes: <input class="tagCheck" value="casual" ...>
+  const checks = Array.from(document.querySelectorAll(".tagCheck"));
+  return checks
+    .filter((c) => c.checked)
+    .map((c) => String(c.value || "").trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function clearTagsUI() {
+  const checks = Array.from(document.querySelectorAll(".tagCheck"));
+  checks.forEach((c) => (c.checked = false));
+}
+
+function setTagsUIFromCsv(tagsCsv) {
+  clearTagsUI();
+  const csv = String(tagsCsv || "").trim();
+  if (!csv) return;
+
+  const selected = csv
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+
+  const checks = Array.from(document.querySelectorAll(".tagCheck"));
+  checks.forEach((c) => {
+    const v = String(c.value || "").trim().toLowerCase();
+    c.checked = selected.includes(v);
+  });
+}
+
+function renderTagsChips(tagsCsv) {
+  const csv = String(tagsCsv || "").trim();
+  if (!csv) return `<span class="hint">Sin tags</span>`;
+
+  const items = csv
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  return items
+    .map((t) => `<span class="tagChipMini">${escapeHtml(t)}</span>`)
+    .join(" ");
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// =========================
 // DASHBOARD
 // =========================
 async function loadDashboard() {
@@ -144,7 +205,10 @@ async function loadDashboard() {
 // PRENDAS
 // =========================
 function setEditHint() {
-  el("editHint").textContent = editingPrendaId
+  const h = el("editHint");
+  if (!h) return;
+
+  h.textContent = editingPrendaId
     ? `Editando prenda ID: ${editingPrendaId} (si NO eliges nuevas imágenes, se conservan las actuales)`
     : "Creando prenda nueva";
 }
@@ -171,6 +235,10 @@ function clearPrendaForm() {
   el("pStock").value = "";
   el("pActivo").value = "1";
 
+  // tags
+  clearTagsUI();
+
+  // files
   el("imgFrente").value = "";
   el("imgAtras").value = "";
   el("imgExtras").value = "";
@@ -196,6 +264,7 @@ async function collectImagesPayloadStrict() {
   const overlayFile = el("imgOverlay").files?.[0] || null;
   const extrasFiles = Array.from(el("imgExtras").files || []);
 
+  // Al CREAR: frente + overlay obligatorios
   if (!editingPrendaId && !frenteFile) {
     throw new Error("La foto de frente es obligatoria para crear la prenda.");
   }
@@ -232,6 +301,8 @@ async function savePrenda() {
   const f = getPrendaForm();
   setMsg("Preparando datos...", true);
 
+  const tags = getSelectedTags(); // ✅ aquí sacamos los tags marcados
+
   const payload = {
     Nombre: f.Nombre || null,
     Categoria: f.Categoria || null,
@@ -239,8 +310,12 @@ async function savePrenda() {
     Precio: f.Precio,
     Stock: f.Stock,
     Activo: f.Activo ? 1 : 0,
+
+    // ✅ nuevo: Tags para backend
+    Tags: tags,
   };
 
+  // imágenes (igual que antes)
   if (!editingPrendaId) {
     payload.Imagenes = await collectImagesPayloadStrict();
   } else {
@@ -293,6 +368,10 @@ function fillPrendaForEdit(p) {
   el("pStock").value = p.Stock ?? "";
   el("pActivo").value = p.Activo ? "1" : "0";
 
+  // ✅ tags: marca checks según TagsCsv
+  setTagsUIFromCsv(p.TagsCsv);
+
+  // previews desde DB
   if (p.imgFrente) showPreview("prevFrente", p.imgFrente);
   else hidePreview("prevFrente");
 
@@ -302,6 +381,7 @@ function fillPrendaForEdit(p) {
   if (p.imgOverlay) showPreview("prevOverlay", p.imgOverlay);
   else hidePreview("prevOverlay");
 
+  // inputs file vacíos
   el("imgFrente").value = "";
   el("imgAtras").value = "";
   el("imgExtras").value = "";
@@ -309,8 +389,8 @@ function fillPrendaForEdit(p) {
   el("extrasPreview").innerHTML = "";
 
   setMsg(
-    "Edita campos y, si deseas cambiar imágenes, selecciona nuevos archivos. Si no, se conservan.",
-    true,
+    "Edita campos y tags. Si deseas cambiar imágenes, selecciona nuevos archivos. Si no, se conservan.",
+    true
   );
 }
 
@@ -336,25 +416,32 @@ async function loadPrendas() {
     div.innerHTML = `
       ${
         img
-          ? `<img class="pimg" src="${img}" alt="${p.Nombre || ""}">`
+          ? `<img class="pimg" src="${img}" alt="${escapeHtml(p.Nombre || "")}">`
           : `<div class="pimg placeholder">Sin imagen</div>`
       }
-      <h3>${p.Nombre || "(sin nombre)"}</h3>
-      <p class="meta">${p.Categoria || "-"} · Stock: ${p.Stock ?? "-"}</p>
+      <h3>${escapeHtml(p.Nombre || "(sin nombre)")}</h3>
+      <p class="meta">${escapeHtml(p.Categoria || "-")} · Stock: ${
+      p.Stock ?? "-"
+    }</p>
       <p class="price">$${Number(p.Precio || 0).toFixed(2)} · ${
-        p.Activo ? "Activa ✅" : "Inactiva ❌"
-      }</p>
+      p.Activo ? "Activa ✅" : "Inactiva ❌"
+    }</p>
       <p class="meta">${p.imgOverlay ? "Overlay ✅" : "Overlay ❌"}</p>
 
-      <div class="row">
+      <div style="margin-top:8px;">
+        ${renderTagsChips(p.TagsCsv)}
+      </div>
+
+      <div class="row" style="margin-top:10px;">
         <button class="secondary btnEdit">Editar</button>
-        <button class="secondary btnToggle">${p.Activo ? "Desactivar" : "Activar"}</button>
+        <button class="secondary btnToggle">${
+          p.Activo ? "Desactivar" : "Activar"
+        }</button>
       </div>
     `;
 
     div.querySelector(".btnEdit").onclick = () => fillPrendaForEdit(p);
-    div.querySelector(".btnToggle").onclick = () =>
-      togglePrenda(p.Id, !p.Activo);
+    div.querySelector(".btnToggle").onclick = () => togglePrenda(p.Id, !p.Activo);
 
     cont.appendChild(div);
   });
@@ -396,7 +483,7 @@ el("imgExtras")?.addEventListener("change", async () => {
     card.innerHTML = `
       <img class="pimg" src="${dataUrl}" alt="extra" />
       <h3>Extra</h3>
-      <p class="meta">${file.name}</p>
+      <p class="meta">${escapeHtml(file.name)}</p>
     `;
     cont.appendChild(card);
   }
@@ -436,13 +523,19 @@ async function loadClientes() {
               (c) => `
             <tr>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.Id}</td>
-              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${(c.Nombres || "") + " " + (c.Apellidos || "")}</td>
-              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.Email || "-"}</td>
-              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleString() : "-"}</td>
+              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${escapeHtml(
+                (c.Nombres || "") + " " + (c.Apellidos || "")
+              )}</td>
+              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${escapeHtml(
+                c.Email || "-"
+              )}</td>
+              <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${
+                c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleString() : "-"
+              }</td>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.Fotos ?? 0}</td>
               <td style="padding:8px; border-bottom:1px solid #f2f2f2;">${c.TryOns ?? 0}</td>
             </tr>
-          `,
+          `
             )
             .join("")}
         </tbody>
@@ -472,6 +565,7 @@ async function init() {
       setActiveTab("tabPrendas");
       showView("viewPrendas");
       await loadPrendas();
+
       closePrendaForm();
       editingPrendaId = null;
       setEditHint();
@@ -512,15 +606,6 @@ async function init() {
     el("btnRefrescarClientes").onclick = () =>
       loadClientes().catch((e) => setMsg("Error: " + e.message));
 
-    // ✅✅✅ ESTO ES LO QUE TE FALTABA ✅✅✅
-    el("btnGuardarTipoCuerpo")?.addEventListener("click", () => {
-      saveTipoCuerpo().catch((e) => setMsg("Error: " + e.message));
-    });
-
-    el("btnCargarTiposCuerpo")?.addEventListener("click", () => {
-      loadTiposCuerpo().catch((e) => setMsg("Error: " + e.message));
-    });
-
     // Arranque
     setActiveTab("tabDashboard");
     showView("viewDashboard");
@@ -531,76 +616,5 @@ async function init() {
     logout();
   }
 }
-
-// ========================
-// TIPOS DE CUERPO (CRUD simple)
-// ========================
-async function saveTipoCuerpo() {
-  const Codigo = (el("tcCodigo").value || "").trim().toLowerCase();
-  const Nombre = (el("tcNombre").value || "").trim();
-  const file = el("tcImagen").files?.[0] || null;
-
-  if (!Codigo) throw new Error("Falta Código (ej: pera)");
-  if (!Nombre) throw new Error("Falta Nombre (ej: Pera)");
-  if (!file) throw new Error("Falta subir la imagen del tipo de cuerpo");
-
-  const base64 = await fileToDataUrl(file);
-
-  setMsg("Guardando tipo de cuerpo...", true);
-
-  await adminFetch("/api/admin/tipos-cuerpo", {
-    method: "POST",
-    body: JSON.stringify({ Codigo, Nombre, ImagenUrl: base64 }),
-  });
-
-  setMsg("Tipo de cuerpo guardado ✅", true);
-
-  el("tcCodigo").value = "";
-  el("tcNombre").value = "";
-  el("tcImagen").value = "";
-  el("tcPreview").classList.add("hidden");
-
-  await loadTiposCuerpo();
-}
-
-async function loadTiposCuerpo() {
-  setMsg("Cargando tipos de cuerpo...", true);
-
-  const data = await adminFetch("/api/admin/tipos-cuerpo");
-  const tipos = data.tipos || [];
-
-  const cont = el("tiposCuerpoList");
-  cont.innerHTML = "";
-
-  if (!tipos.length) {
-    cont.innerHTML = `<div class="card">No hay tipos de cuerpo guardados</div>`;
-    setMsg("", true);
-    return;
-  }
-
-  tipos.forEach((t) => {
-    const div = document.createElement("div");
-    div.className = "cardProduct";
-    div.innerHTML = `
-      ${
-        t.ImagenUrl
-          ? `<img class="pimg" src="${t.ImagenUrl}" alt="${t.Nombre}">`
-          : `<div class="pimg placeholder">Sin imagen</div>`
-      }
-      <h3>${t.Nombre || "-"}</h3>
-      <p class="meta">Código: ${t.Codigo}</p>
-    `;
-    cont.appendChild(div);
-  });
-
-  setMsg("", true);
-}
-
-// preview en vivo
-el("tcImagen")?.addEventListener("change", async () => {
-  const f = el("tcImagen").files?.[0];
-  if (!f) return;
-  showPreview("tcPreview", await fileToDataUrl(f));
-});
 
 init();

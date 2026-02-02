@@ -1,59 +1,63 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OutfitMatch - Resultado</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div class="container">
-    <h1>Tu resultado</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OutfitMatch - Resultado</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <a class="topbarAdmin" href="admin-login.html">Administrador</a>
+    </div>
 
-    <div class="card">
-      <h2 id="tipoNombre"></h2>
-      <p class="subtitle" id="objetivo"></p>
-      <img id="tipoImg" class="bodytype-img" alt="Tipo de cuerpo" />
+    <div class="container">
+      <h1>Tu resultado</h1>
 
-      <div class="row">
-        <button id="goCatalog" class="primary">Ir al catálogo</button>
-        <button id="goSurvey" class="secondary">Volver</button>
+      <div class="card">
+        <h2 id="tipoNombre"></h2>
+        <p class="subtitle" id="objetivo"></p>
+        <img id="tipoImg" class="bodytype-img" alt="Tipo de cuerpo" />
+
+        <div class="row">
+          <button id="goCatalog" class="primary">Ir al catálogo</button>
+          <button id="goSurvey" class="secondary">Volver</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Paleta de colores recomendada</h2>
+        <p id="paletaTexto" class="subtitle"></p>
+        <div id="paleta" class="palette"></div>
+        <p id="contraste" class="hint"></p>
+      </div>
+
+      <div class="card">
+        <h2>Recomendaciones según tu tipo de cuerpo</h2>
+        <div class="grid2">
+          <div>
+            <h3>✅ Te favorece</h3>
+            <ul id="siList"></ul>
+          </div>
+          <div>
+            <h3>⚠️ Mejor evitar</h3>
+            <ul id="noList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Tips rápidos para tu ocasión</h2>
+        <ul id="ocasionTips"></ul>
+      </div>
+
+      <div class="card">
+        <p id="msg" class="msg"></p>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Paleta de colores recomendada</h2>
-      <p id="paletaTexto" class="subtitle"></p>
-      <div id="paleta" class="palette"></div>
-      <p id="contraste" class="hint"></p>
-    </div>
-
-    <div class="card">
-      <h2>Recomendaciones según tu tipo de cuerpo</h2>
-      <div class="grid2">
-        <div>
-          <h3>✅ Te favorece</h3>
-          <ul id="siList"></ul>
-        </div>
-        <div>
-          <h3>⚠️ Mejor evitar</h3>
-          <ul id="noList"></ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Tips rápidos para tu ocasión</h2>
-      <ul id="ocasionTips"></ul>
-    </div>
-
-    <div class="card">
-      <p id="msg" class="msg"></p>
-    </div>
-  </div>
-
-  <script src="./js/config.js"></script>
-  <script src="js/idle.js"></script>
-  <script src="js/result.js"></script>
-</body>
+    <script src="./js/config.js"></script>
+    <script src="js/idle.js"></script>
+    <script src="js/result.js"></script>
+  </body>
 </html>

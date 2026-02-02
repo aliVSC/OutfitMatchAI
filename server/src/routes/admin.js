@@ -54,6 +54,58 @@ async function insertImages(pool, prendaId, imagenes) {
   }
 }
 
+// ✅ Helper: guardar Tags (ocasion) en Tags + PrendaTags
+async function savePrendaTags(pool, prendaId, tags) {
+  const clean = Array.isArray(tags)
+    ? tags
+        .map((x) => String(x || "").trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
+  // 1) borra relaciones actuales
+  await pool
+    .request()
+    .input("PrendaId", sql.Int, prendaId)
+    .query(`DELETE FROM PrendaTags WHERE PrendaId=@PrendaId`);
+
+  // si no hay tags, listo
+  if (!clean.length) return;
+
+  // 2) asegura cada tag + crea relación
+  for (const nombre of clean) {
+    // asegura tag
+    const tagRow = await pool
+      .request()
+      .input("Nombre", sql.NVarChar(80), nombre)
+      .input("Tipo", sql.NVarChar(30), "ocasion")
+      .query(`
+        IF EXISTS (SELECT 1 FROM Tags WHERE Nombre=@Nombre)
+        BEGIN
+          SELECT Id FROM Tags WHERE Nombre=@Nombre
+        END
+        ELSE
+        BEGIN
+          INSERT INTO Tags (Nombre, Tipo)
+          OUTPUT INSERTED.Id
+          VALUES (@Nombre, @Tipo)
+        END
+      `);
+
+    const tagId = tagRow.recordset?.[0]?.Id;
+    if (!tagId) continue;
+
+    // relación prenda-tag
+    await pool
+      .request()
+      .input("PrendaId", sql.Int, prendaId)
+      .input("TagId", sql.Int, tagId)
+      .query(`
+        IF NOT EXISTS (SELECT 1 FROM PrendaTags WHERE PrendaId=@PrendaId AND TagId=@TagId)
+        INSERT INTO PrendaTags (PrendaId, TagId) VALUES (@PrendaId, @TagId)
+      `);
+  }
+}
+
 // ======================================================
 // GET /api/admin/prendas
 // ======================================================
@@ -66,24 +118,28 @@ router.get("/prendas", requireAdmin, async (req, res) => {
         p.ImagenUrl, p.OverlayUrl,
         (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='frente' AND Activo=1 ORDER BY Orden ASC) AS imgFrente,
         (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='atras' AND Activo=1 ORDER BY Orden ASC) AS imgAtras,
-        (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='overlay' AND Activo=1 ORDER BY Orden ASC) AS imgOverlay
+        (SELECT TOP 1 Url FROM PrendaImagenes WHERE PrendaId=p.Id AND Tipo='overlay' AND Activo=1 ORDER BY Orden ASC) AS imgOverlay,
+        (
+          SELECT STRING_AGG(t.Nombre, ',')
+          FROM PrendaTags pt
+          JOIN Tags t ON t.Id = pt.TagId
+          WHERE pt.PrendaId = p.Id
+        ) AS TagsCsv
       FROM Prendas p
       ORDER BY p.Id DESC
     `);
     res.json({ ok: true, prendas: r.recordset });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        error: "Error listando prendas",
-        detail: String(e.message || e),
-      });
+    res.status(500).json({
+      error: "Error listando prendas",
+      detail: String(e.message || e),
+    });
   }
 });
 
 // ======================================================
 // POST /api/admin/prendas
-// body: { Nombre, Categoria, Color, Precio, Stock, Activo, OverlayUrl, Imagenes:[] }
+// body: { Nombre, Categoria, Color, Precio, Stock, Activo, OverlayUrl, Imagenes:[], Tags:[] }
 // ======================================================
 router.post("/prendas", requireAdmin, async (req, res) => {
   try {
@@ -96,6 +152,7 @@ router.post("/prendas", requireAdmin, async (req, res) => {
       Activo,
       OverlayUrl,
       Imagenes,
+      Tags, // ✅ NUEVO
     } = req.body || {};
 
     const tieneFrente =
@@ -134,7 +191,12 @@ router.post("/prendas", requireAdmin, async (req, res) => {
       `);
 
     const newId = r.recordset?.[0]?.Id;
+
+    // imágenes
     await insertImages(pool, newId, Imagenes);
+
+    // ✅ tags
+    await savePrendaTags(pool, newId, Tags);
 
     res.json({ ok: true, id: newId });
   } catch (e) {
@@ -146,7 +208,7 @@ router.post("/prendas", requireAdmin, async (req, res) => {
 
 // ======================================================
 // PUT /api/admin/prendas/:id
-// body: { ..., Imagenes:[] } (si envías imágenes nuevas, reemplaza PrendaImagenes)
+// body: { ..., Imagenes?:[], Tags?:[] }
 // ======================================================
 router.put("/prendas/:id", requireAdmin, async (req, res) => {
   try {
@@ -162,6 +224,7 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
       Activo,
       OverlayUrl,
       Imagenes,
+      Tags, // ✅ NUEVO
     } = req.body || {};
 
     const pool = await getPool();
@@ -205,6 +268,12 @@ router.put("/prendas/:id", requireAdmin, async (req, res) => {
       await insertImages(pool, id, Imagenes);
     }
 
+    // ✅ tags (si vienen en body)
+    // Nota: si mandas Tags: [] => deja sin tags
+    if (Array.isArray(Tags)) {
+      await savePrendaTags(pool, id, Tags);
+    }
+
     res.json({ ok: true });
   } catch (e) {
     res
@@ -231,12 +300,10 @@ router.patch("/prendas/:id/toggle", requireAdmin, async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        error: "Error cambiando estado",
-        detail: String(e.message || e),
-      });
+    res.status(500).json({
+      error: "Error cambiando estado",
+      detail: String(e.message || e),
+    });
   }
 });
 
@@ -256,72 +323,10 @@ router.get("/clientes", requireAdmin, async (req, res) => {
     `);
     res.json({ ok: true, clientes: r.recordset });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        error: "Error listando clientes",
-        detail: String(e.message || e),
-      });
-  }
-});
-
-// ======================================================
-// TIPOS DE CUERPO (solo para ingresar los 5)
-// ======================================================
-router.get("/tipos-cuerpo", requireAdmin, async (req, res) => {
-  try {
-    const pool = await getPool();
-    const r = await pool.request().query(`
-      SELECT Codigo, Nombre, ImagenUrl
-      FROM TiposCuerpo
-      ORDER BY Nombre ASC
-    `);
-    res.json({ ok: true, tipos: r.recordset });
-  } catch (e) {
-    res
-      .status(500)
-      .json({
-        error: "Error listando tipos cuerpo",
-        detail: String(e.message || e),
-      });
-  }
-});
-
-router.post("/tipos-cuerpo", requireAdmin, async (req, res) => {
-  try {
-    const { Codigo, Nombre, ImagenUrl } = req.body || {};
-    if (!Codigo) return res.status(400).json({ error: "Falta Codigo" });
-    if (!Nombre) return res.status(400).json({ error: "Falta Nombre" });
-    if (!ImagenUrl) return res.status(400).json({ error: "Falta ImagenUrl" });
-
-    const pool = await getPool();
-
-    await pool
-      .request()
-      .input("Codigo", sql.NVarChar(40), Codigo)
-      .input("Nombre", sql.NVarChar(80), Nombre)
-      .input("ImagenUrl", sql.NVarChar(sql.MAX), ImagenUrl).query(`
-        IF EXISTS (SELECT 1 FROM TiposCuerpo WHERE Codigo=@Codigo)
-        BEGIN
-          UPDATE TiposCuerpo
-          SET Nombre=@Nombre, ImagenUrl=@ImagenUrl
-          WHERE Codigo=@Codigo
-        END
-        ELSE
-        BEGIN
-          INSERT INTO TiposCuerpo (Codigo, Nombre, ImagenUrl)
-          VALUES (@Codigo, @Nombre, @ImagenUrl)
-        END
-      `);
-
-    res.json({ ok: true });
-  } catch (e) {
-    res
-      .status(500)
-      .json({
-        error: "Error guardando tipo cuerpo",
-        detail: String(e.message || e),
-      });
+    res.status(500).json({
+      error: "Error listando clientes",
+      detail: String(e.message || e),
+    });
   }
 });
 

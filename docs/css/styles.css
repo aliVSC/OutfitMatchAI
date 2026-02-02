@@ -488,3 +488,67 @@ body.home .row{
     width: 100%;
   }
 }
+
+/* =========================
+   TAGS (chips)
+   ========================= */
+.tagGrid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:10px;
+}
+
+.tagChip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+  font-weight:800;
+  user-select:none;
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
+}
+
+.tagChip:hover{
+  background: var(--primary-soft);
+  border-color: rgba(216,76,134,.20);
+}
+
+.tagChip input{
+  width:auto;
+  margin:0;
+  transform: scale(1.1);
+}
+
+/* =========================
+   TOPBAR Admin accesible
+   ========================= */
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: 10px 14px;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.topbarAdmin{
+  text-decoration:none;
+  font-weight:900;
+  padding:10px 14px;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--secondary-text);
+  border: 1px solid rgba(0,0,0,.05);
+}
+
+.topbarAdmin:hover{
+  background: #ead9e4;
+}

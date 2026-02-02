@@ -121,6 +121,36 @@
             style="border: none; border-top: 1px solid #eee; margin: 16px 0"
           />
 
+          <h3>Tags (Ocasión)</h3>
+          <p class="hint">Marca a qué ocasiones aplica esta prenda.</p>
+
+          <div class="tagGrid">
+            <label class="tagChip"
+              ><input type="checkbox" value="casual" class="tagCheck" />
+              Casual</label
+            >
+            <label class="tagChip"
+              ><input type="checkbox" value="oficina" class="tagCheck" />
+              Oficina</label
+            >
+            <label class="tagChip"
+              ><input type="checkbox" value="cita" class="tagCheck" />
+              Cita</label
+            >
+            <label class="tagChip"
+              ><input type="checkbox" value="fiesta" class="tagCheck" />
+              Fiesta</label
+            >
+            <label class="tagChip"
+              ><input type="checkbox" value="formal" class="tagCheck" />
+              Formal</label
+            >
+          </div>
+
+          <hr
+            style="border: none; border-top: 1px solid #eee; margin: 16px 0"
+          />
+
           <h3>Imágenes</h3>
 
           <div class="grid2">
@@ -187,43 +217,6 @@
         <div id="clientesList" class="card"></div>
       </div>
     </div>
-
-    <!-- Solo es para ingresar los tipos de cuerpo, despues podemos eliminar esta parte-->
-    <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0" />
-
-    <h2>Tipos de cuerpo (5)</h2>
-    <p class="subtitle">
-      Sube la imagen del tipo de cuerpo. Se guardará en la base como Base64.
-    </p>
-
-    <div class="grid2">
-      <div class="card">
-        <label><strong>Código</strong> (ej: pera, reloj_arena)</label>
-        <input id="tcCodigo" placeholder="pera" />
-      </div>
-
-      <div class="card">
-        <label><strong>Nombre</strong> (ej: Pera)</label>
-        <input id="tcNombre" placeholder="Pera" />
-      </div>
-    </div>
-
-    <div class="card">
-      <label><strong>Imagen (PNG/JPG)</strong></label>
-      <input id="tcImagen" type="file" accept="image/*" />
-      <img id="tcPreview" class="preview hidden" alt="Preview tipo cuerpo" />
-    </div>
-
-    <div class="row">
-      <button id="btnGuardarTipoCuerpo" class="primary">
-        Guardar tipo de cuerpo
-      </button>
-      <button id="btnCargarTiposCuerpo" class="secondary">
-        Ver tipos guardados
-      </button>
-    </div>
-
-    <div id="tiposCuerpoList" class="catalog"></div>
 
     <script src="js/config.js"></script>
     <script src="js/admin.js"></script>
