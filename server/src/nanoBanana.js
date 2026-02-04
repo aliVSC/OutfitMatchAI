@@ -6,38 +6,25 @@ function splitDataUrl(dataUrl) {
   }
 
   if (!dataUrl.includes("base64,")) {
-    // ya viene “crudo”
     return { mimeType: "image/png", data: dataUrl };
   }
 
   const [meta, b64] = dataUrl.split("base64,");
   const mimeMatch = meta.match(/^data:(.*?);/i);
   const mimeType = mimeMatch?.[1] || "image/png";
+
   return { mimeType, data: b64 };
 }
 
-function nowMs() {
-  return Date.now();
-}
+async function nanoBananaTryOn({ personaBase64, prendaBase64 }) {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-function approxBytesFromBase64(b64) {
-  if (!b64) return 0;
-  // aproximación: base64 length * 0.75
-  return Math.floor(b64.length * 0.75);
-}
-
-function buildPrompt({ strict = false } = {}) {
-  return `
+  const prompt = `
 You are editing the FIRST image using the garment from the SECOND image.
 
 THIS IS A VIRTUAL FITTING ROOM (TRY-ON).
 The person in the FIRST image may already be wearing clothes.
 You MUST COMPLETELY REMOVE/REPLACE the original clothes so the final result shows ONLY the new garment (not layered).
-
-CRITICAL SAFETY / CLOTHING COVERAGE (MANDATORY):
-- The final image must be FULLY DRESSED.
-- Never leave the chest/torso uncovered.
-- If replacing clothing results in exposed skin, you MUST add basic clothing to cover it.
 
 PRIMARY GOAL:
 1) Replace the person’s CURRENT clothing entirely with the garment shown in the SECOND image.
@@ -52,20 +39,13 @@ FULL BODY REQUIREMENT (OUTPAINT):
    - The pose must remain coherent with the visible shoulders/arms orientation.
    - The final image must NOT look stretched or deformed.
 
-GARMENT COMPLETION RULES (MANDATORY):
+GARMENT COMPLETION RULES:
 - The garment from the SECOND image must be complete and clean (correct neckline, straps, sleeves, length).
-
-A) If the garment is ONLY a TOP / BLOUSE / SHIRT / BODY (upper garment):
-  - Dress the person with that TOP AND generate a neutral, realistic BOTTOM (simple jeans/pants/skirt).
-  - Minimal, no logos, no patterns, no accessories.
-
-B) If the garment is ONLY a BOTTOM / PANTS / JEANS / SHORTS / SKIRT (lower garment):
-  - Dress the person with that BOTTOM AND generate a neutral, realistic TOP.
-  - Use a simple plain t-shirt or basic blouse, solid color, NO logos, NO patterns.
-  - The TOP must fully cover chest and torso.
-
-C) If the garment is a full outfit (dress/jumpsuit/set):
-  - Do NOT add extra pieces.
+- If the garment is a TOP/BLOUSE/BODY that only covers the upper part:
+  - Dress the person with that top AND generate a neutral, realistic bottom (simple jeans/pants/skirt) that matches lighting and style.
+  - The bottom must be minimal and not draw attention; it must NOT introduce fancy patterns, logos, or extra accessories.
+  - The goal is a full-body result that looks natural in a store fitting room.
+- If the garment is a full outfit (dress/jumpsuit/set), do NOT add extra pieces.
 
 REALISM RULES:
 - Make the garment fit naturally to the person’s body: correct size, alignment, seams, folds, fabric texture.
@@ -82,26 +62,23 @@ IMPORTANT "NO LAYERING" CHECK:
 Before finalizing, verify:
 - No visible part of the original clothes remains (no collars, sleeves, hoodies, shirts underneath),
   unless the SECOND image clearly includes them.
+- Example: if original has a white hoodie and the new garment is a strap dress, the final must show ONLY the strap dress.
 
 OUTPUT:
 - Return a single realistic final image.
 - Full body whenever the original was cropped.
 - No text, no logos, no watermark, no extra people, no artifacts.
-
-${strict ? `
-STRICT FALLBACK (USE IF ANYTHING IS UNCLEAR):
-- If you are not sure what TOP to generate, ALWAYS use: plain white t-shirt (short sleeve), no logos.
-- If you are not sure what BOTTOM to generate, ALWAYS use: plain black jeans, no logos.
-- DOUBLE CHECK: person must be fully dressed (no exposed chest/torso).
-` : ""}
 `.trim();
-}
 
-async function generateTryOnOnce({ ai, model, p1, p2, strict = false }) {
-  const prompt = buildPrompt({ strict });
+  const p1 = splitDataUrl(personaBase64);
+  const p2 = splitDataUrl(prendaBase64);
+
+  if (!p1.data || !p2.data) {
+    throw new Error("Faltan imágenes (base64) para Nano Banana.");
+  }
 
   const response = await ai.models.generateContent({
-    model,
+    model: process.env.GEMINI_MODEL || "gemini-2.5-flash-image",
     contents: [
       {
         role: "user",
@@ -118,77 +95,9 @@ async function generateTryOnOnce({ ai, model, p1, p2, strict = false }) {
   const parts = response.candidates?.[0]?.content?.parts || [];
   const img = parts.find((p) => p.inlineData?.data);
 
-  if (!img) return { ok: false, dataUrl: null, raw: response };
-  return { ok: true, dataUrl: "data:image/png;base64," + img.inlineData.data, raw: response };
-}
+  if (!img) throw new Error("Nano Banana no devolvió imagen.");
 
-async function nanoBananaTryOn({ personaBase64, prendaBase64 }) {
-  const started = nowMs();
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-image";
-
-  const p1 = splitDataUrl(personaBase64);
-  const p2 = splitDataUrl(prendaBase64);
-
-  if (!p1.data || !p2.data) {
-    throw new Error("Faltan imágenes (base64) para Nano Banana.");
-  }
-
-  // =========================
-  // MÉTRICAS (input)
-  // =========================
-  const inputMetrics = {
-    model,
-    personaMime: p1.mimeType,
-    prendaMime: p2.mimeType,
-    personaApproxBytes: approxBytesFromBase64(p1.data),
-    prendaApproxBytes: approxBytesFromBase64(p2.data),
-  };
-
-  console.log("[TryOn] inputMetrics:", inputMetrics);
-
-  // 1) intento normal
-  const t1 = nowMs();
-  const first = await generateTryOnOnce({ ai, model, p1, p2, strict: false });
-  const t1ms = nowMs() - t1;
-
-  console.log("[TryOn] attempt1:", {
-    ok: first.ok,
-    ms: t1ms,
-    hasImage: !!first.dataUrl,
-  });
-
-  // 2) fallback: reintento estricto (sirve para casos como “pantalón => torso desnudo”)
-  // No podemos “ver” si quedó desnuda, pero tu caso real ya mostró que pasa.
-  // Entonces hacemos retry por defecto si quieres “más confiable”.
-  if (!first.ok) {
-    const t2 = nowMs();
-    const second = await generateTryOnOnce({ ai, model, p1, p2, strict: true });
-    const t2ms = nowMs() - t2;
-
-    console.log("[TryOn] attempt2(strict):", {
-      ok: second.ok,
-      ms: t2ms,
-      hasImage: !!second.dataUrl,
-    });
-
-    if (!second.ok) {
-      throw new Error("Nano Banana no devolvió imagen en ninguno de los intentos.");
-    }
-
-    console.log("[TryOn] totalMs:", nowMs() - started);
-    return second.dataUrl;
-  }
-
-  // ✅ Opcional recomendado:
-  // si quieres mejorar el caso “pantalón”, fuerza SIEMPRE un segundo intento estricto
-  // cuando el usuario selecciona prenda de tipo "bottom".
-  // (si en tu DB ya sabes si es pantalón/falda, pásame ese flag y lo hacemos perfecto)
-
-  console.log("[TryOn] totalMs:", nowMs() - started);
-  return first.dataUrl;
+  return "data:image/png;base64," + img.inlineData.data;
 }
 
 module.exports = { nanoBananaTryOn };
-
